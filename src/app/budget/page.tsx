@@ -7,6 +7,9 @@ import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
+import { convertCurrency } from '@/lib/currencyConversion';
+import MonthSelector from '@/components/MonthSelector';
+import { useMonth } from '@/context/MonthContext';
 
 const getBudgetIcon = (iconType: string) => {
   const lowerType = iconType.toLowerCase();
@@ -34,25 +37,29 @@ const getBudgetIcon = (iconType: string) => {
   }
 };
 
-const getProgressBarColor = (percentage: number) => {
-  if (percentage >= 90) return 'bg-red-500';
-  if (percentage >= 70) return 'bg-yellow-500';
-  return 'bg-blue-500';
+const getProgressBarColor = (_percentage: number) => {
+  // Always use a blue progress bar for a calmer, consistent look
+  return 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-primary-hover)] shadow-[0_0_12px_rgba(59,130,246,0.35)]';
+};
+
+const normalizeCurrencyCode = (code?: string) => {
+  if (!code) return 'USD';
+  const upper = code.toUpperCase();
+  if (upper === 'RM') return 'MYR';
+  return upper;
 };
 
 export default function Budget() {
   const { budgets, expenses, reloadBudgets } = useFinance();
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+  const { selectedMonth, setSelectedMonth } = useMonth();
   const [showAddBudget, setShowAddBudget] = useState(false);
   const [editingBudget, setEditingBudget] = useState<any>(null);
   const [deletingBudget, setDeletingBudget] = useState<string | null>(null);
   const [newBudget, setNewBudget] = useState({
     category: '',
-    allocated_amount: ''
+    allocated_amount: '',
+    currency: 'USD'
   });
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [userSettings, setUserSettings] = useState<any>(null);
@@ -74,14 +81,16 @@ export default function Budget() {
         .eq('user_id', user.id)
         .single();
       if (data) {
-        setUserSettings(data);
-        setNewBudget(prev => ({ ...(prev as any), currency: data.currency || 'USD' }));
+        const normalizedCurrency = normalizeCurrencyCode(data.currency);
+        const normalizedSettings = { ...data, currency: normalizedCurrency };
+        setUserSettings(normalizedSettings);
+        setNewBudget(prev => ({ ...prev, currency: normalizedCurrency || 'USD' }));
       }
     };
     loadSettings();
   }, [user]);
 
-  const profileCurrency = userSettings?.currency || 'USD';
+  const profileCurrency = normalizeCurrencyCode(userSettings?.currency);
   const formatCurrency = getCurrencyFormatter(profileCurrency);
   const formatBy = (code?: string) => getCurrencyFormatter(code || profileCurrency);
 
@@ -96,12 +105,16 @@ export default function Budget() {
             name: newBudget.category,
             category: newBudget.category,
             allocated_amount: parseFloat(newBudget.allocated_amount),
-            currency: (newBudget as any).currency || userSettings?.currency || 'USD'
+            currency: newBudget.currency || userSettings?.currency || 'USD'
           });
 
         if (error) throw error;
 
-        setNewBudget({ category: availableCategories[0] || '', allocated_amount: '' });
+        setNewBudget({ 
+          category: availableCategories[0] || '', 
+          allocated_amount: '',
+          currency: userSettings?.currency || 'USD'
+        });
         setShowAddBudget(false);
         await reloadBudgets();
       } catch (error) {
@@ -121,7 +134,7 @@ export default function Budget() {
           name: editingBudget.category,
           category: editingBudget.category,
           allocated_amount: editingBudget.allocated_amount,
-          currency: (editingBudget as any).currency || (newBudget as any).currency || userSettings?.currency || 'USD'
+          currency: editingBudget.currency || userSettings?.currency || 'USD'
         })
         .eq('id', editingBudget.id);
 
@@ -156,49 +169,48 @@ export default function Budget() {
   };
 
   return (
-    <div className="p-6 bg-slate-800 min-h-screen">
+    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex animate-slide-in-up flex-col lg:flex-row lg:items-center lg:justify-between gap-4 animate-slide-in-up">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Budgets</h1>
-          <p className="text-slate-400">Manage your spending with personalized budgets.</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Budgets</h1>
+          <p className="text-[var(--text-secondary)]">Manage your spending with personalized budgets.</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <label htmlFor="budget-month" className="text-slate-400 text-sm">Select Month:</label>
-          <select
-            id="budget-month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="bg-slate-900 border border-slate-600 rounded-lg px-4 pr-12 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {Array.from({ length: 12 }).map((_, i) => {
-              const d = new Date();
-              d.setMonth(d.getMonth() - i);
-              const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-              const label = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-              return <option key={value} value={value}>{label}</option>;
-            })}
-          </select>
+        <div className="flex justify-end">
+          <MonthSelector
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+            showAllOption
+          />
         </div>
       </div>
 
 
       <div className="space-y-4">
           {budgets.length === 0 ? (
-            <div className="bg-slate-900 rounded-xl p-12 border border-slate-700 text-center">
-              <p className="text-slate-400">No budgets set yet. Add a budget to start tracking your spending!</p>
+            <div className="glass-card rounded-2xl p-12 text-center">
+              <p className="text-[var(--text-secondary)]">No budgets set yet. Add a budget to start tracking your spending!</p>
             </div>
           ) : (
-            budgets.map((budget) => {
+            budgets.map((budget, index) => {
               const IconComponent = getBudgetIcon(budget.category.toLowerCase());
+              const budgetCurrency = normalizeCurrencyCode(budget.currency);
+              
               // Filter expenses for the selected month and this category
+              // AND convert all expenses to the budget's currency
               const monthSpent = expenses
                 .filter((e) => {
                   const d = new Date(e.date);
                   const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                   return ym === selectedMonth && e.category === budget.category;
                 })
-                .reduce((sum, e) => sum + e.amount, 0);
+                .reduce((sum, e) => {
+                  // Convert expense amount to budget currency
+                  const expenseCurrency = normalizeCurrencyCode(e.currency);
+                  const convertedAmount = convertCurrency(e.amount, expenseCurrency, budgetCurrency);
+                  return sum + convertedAmount;
+                }, 0);
+              
               const percentage = budget.allocated_amount > 0 ? Math.round((monthSpent / budget.allocated_amount) * 100) : 0;
               const remaining = budget.allocated_amount - monthSpent;
               
@@ -206,7 +218,8 @@ export default function Budget() {
                 <div
                   key={budget.id}
                   onClick={() => setEditingBudget(budget)}
-                  className="bg-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
+                  className="glass-card rounded-2xl p-6 hover:bg-[var(--card-hover)] hover:scale-102 transition-all duration-300 cursor-pointer animate-scale-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center flex-1">
@@ -214,15 +227,15 @@ export default function Budget() {
                         <IconComponent className="h-6 w-6 text-blue-400" />
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white">{budget.category}</h3>
-                        <p className="text-slate-400 text-sm">
-                          Remaining: {formatBy(budget.currency)(remaining)}
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)]">{budget.category}</h3>
+                        <p className="text-[var(--text-secondary)] text-sm">
+                          Remaining: {formatBy(budgetCurrency)(remaining)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-white">{percentage}%</div>
+                        <div className="text-2xl font-bold text-[var(--text-primary)]">{percentage}%</div>
                       </div>
                       <div className="flex space-x-2">
                         <button
@@ -231,7 +244,7 @@ export default function Budget() {
                             handleDeleteBudget(budget.id);
                           }}
                           disabled={deletingBudget === budget.id}
-                          className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                          className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                           title="Delete budget"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -242,11 +255,11 @@ export default function Budget() {
 
                   {/* Progress Bar */}
                   <div className="mb-4">
-                  <div className="flex justify-between text-sm text-slate-400 mb-2">
-                    <span>{formatBy(budget.currency)(monthSpent)} spent</span>
-                    <span>{formatBy(budget.currency)(budget.allocated_amount)} budget</span>
+                  <div className="flex justify-between text-sm text-[var(--text-secondary)] mb-2">
+                    <span>{formatBy(budgetCurrency)(monthSpent)} spent</span>
+                    <span>{formatBy(budgetCurrency)(budget.allocated_amount)} budget</span>
                   </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(percentage)}`}
                         style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -261,7 +274,7 @@ export default function Budget() {
         {/* Add New Budget Button */}
         <button
           onClick={() => setShowAddBudget(true)}
-          className="w-full bg-slate-900 border-2 border-dashed border-slate-600 rounded-xl p-6 text-slate-400 hover:text-white hover:border-slate-500 transition-colors flex items-center justify-center"
+          className="w-full glass-card border-2 border-dashed border-[var(--card-border)] rounded-2xl p-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all duration-300 flex items-center justify-center shadow-sm"
         >
           <Plus className="h-5 w-5 mr-2" />
           Add New Budget
@@ -271,25 +284,25 @@ export default function Budget() {
       {/* Add Budget Modal */}
       {showAddBudget && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setShowAddBudget(false)}
         >
           <div 
-            className="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-700"
+            className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Add New Budget</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Add New Budget</h3>
             
             <form onSubmit={handleAddBudget} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Category (from your expenses)
                 </label>
                 {availableCategories.length > 0 ? (
                   <select
                     value={newBudget.category}
                     onChange={(e) => setNewBudget({ ...newBudget, category: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     {availableCategories.map((cat) => (
@@ -299,16 +312,16 @@ export default function Budget() {
                     ))}
                   </select>
                 ) : (
-                  <p className="text-slate-400 text-sm">No expense categories available. Add some expenses first!</p>
+                  <p className="text-[var(--text-secondary)] text-sm">No expense categories available. Add some expenses first!</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Monthly Budget
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400">$</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">$</span>
                   <input
                     type="number"
                     value={newBudget.allocated_amount}
@@ -316,18 +329,18 @@ export default function Budget() {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-lg pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={(newBudget as any).currency || 'USD'}
-                  onChange={(e) => setNewBudget({ ...(newBudget as any), currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={newBudget.currency || 'USD'}
+                  onChange={(e) => setNewBudget({ ...newBudget, currency: e.target.value })}
+                  className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -339,13 +352,13 @@ export default function Budget() {
                 <button
                   type="button"
                   onClick={() => setShowAddBudget(false)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 glass-card hover:bg-[var(--card-hover)] text-[var(--text-primary)] py-2.5 px-4 rounded-xl transition-all duration-300 font-medium liquid-button"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 bg-[var(--accent-primary)] hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg liquid-button"
                 >
                   Add Budget
                 </button>
@@ -358,47 +371,47 @@ export default function Budget() {
       {/* Edit Budget Modal */}
       {editingBudget && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setEditingBudget(null)}
         >
           <div 
-            className="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-700"
+            className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Edit Budget</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Budget</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category</label>
                 <input
                   type="text"
                   value={editingBudget.category}
                   disabled
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-slate-400 cursor-not-allowed"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-secondary)] cursor-not-allowed"
                 />
-                <p className="text-xs text-slate-500 mt-1">Category cannot be changed</p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">Category cannot be changed</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Monthly Budget</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Monthly Budget</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400">$</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">$</span>
                   <input
                     type="number"
                     value={editingBudget.allocated_amount}
                     onChange={(e) => setEditingBudget({ ...editingBudget, allocated_amount: parseFloat(e.target.value) })}
                     step="0.01"
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-lg pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={(editingBudget as any).currency || (newBudget as any).currency || 'USD'}
-                  onChange={(e) => setEditingBudget({ ...(editingBudget as any), currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={normalizeCurrencyCode(editingBudget?.currency) || userSettings?.currency || 'USD'}
+                  onChange={(e) => setEditingBudget({ ...editingBudget, currency: e.target.value })}
+                  className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -409,13 +422,13 @@ export default function Budget() {
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={() => setEditingBudget(null)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 glass-card hover:bg-[var(--card-hover)] text-[var(--text-primary)] py-2.5 px-4 rounded-xl transition-all duration-300 font-medium liquid-button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateBudget}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 bg-[var(--accent-primary)] hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg liquid-button"
                 >
                   Save Changes
                 </button>

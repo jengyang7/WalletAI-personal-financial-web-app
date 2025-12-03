@@ -64,3 +64,4 @@ export function updateExchangeRates(rates: Record<string, number>): void {
   Object.assign(EXCHANGE_RATES, rates);
 }
 
+

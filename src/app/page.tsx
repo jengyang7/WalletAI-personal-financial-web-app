@@ -40,58 +40,63 @@ export default function Dashboard() {
   const [userSettings, setUserSettings] = useState<any>(null);
   const [income, setIncome] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
+  const [holdings, setHoldings] = useState<any[]>([]);
   const [spendingPeriod, setSpendingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
 
   useEffect(() => {
-    if (user) {
-      loadUserSettings();
-      loadIncome();
-      loadAssets();
-    }
-  }, [user]);
+    if (!user?.id) return;
+    
+    let mounted = true;
+    
+    const loadData = async () => {
+      try {
+        // Load user settings
+        const { data: settingsData } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        if (mounted && settingsData) setUserSettings(settingsData);
 
-  const loadUserSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        // Load income
+        const { data: incomeData, error: incomeError } = await supabase
+          .from('income')
+          .select('*')
+          .order('date', { ascending: false });
+        if (mounted && !incomeError) setIncome(incomeData || []);
 
-      if (data) {
-        setUserSettings(data);
+        // Load assets
+        const { data: assetsData, error: assetsError } = await supabase
+          .from('assets')
+          .select('*');
+        if (mounted && !assetsError) setAssets(assetsData || []);
+
+        // Load holdings (for portfolio value in net worth)
+        const { data: holdingsData, error: holdingsError } = await supabase
+          .from('holdings')
+          .select('*');
+        if (mounted && !holdingsError) setHoldings(holdingsData || []);
+
+        // Load monthly stats for net worth trend
+        const { data: statsData, error: statsError } = await supabase
+          .from('monthly_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('month', { ascending: true });
+        if (mounted && !statsError) setMonthlyStats(statsData || []);
+      } catch (error) {
+        console.error('Error loading data:', error);
       }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
-  };
+    };
 
-  const loadIncome = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('income')
-        .select('*')
-        .order('date', { ascending: false });
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
 
-      if (error) throw error;
-      setIncome(data || []);
-    } catch (error) {
-      console.error('Error loading income:', error);
-    }
-  };
-
-  const loadAssets = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('*');
-
-      if (error) throw error;
-      setAssets(data || []);
-    } catch (error) {
-      console.error('Error loading assets:', error);
-    }
-  };
 
   // Filter expenses by selected month
   const monthExpenses = useMemo(() => {
@@ -113,6 +118,7 @@ export default function Dashboard() {
 
   // Get previous month data for comparison
   const previousMonthData = useMemo(() => {
+    const profileCurrency = userSettings?.currency || 'USD';
     const [year, month] = selectedMonth.split('-').map(Number);
     const prevDate = new Date(year, month - 2, 1); // month - 2 because months are 0-indexed
     const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
@@ -129,11 +135,31 @@ export default function Dashboard() {
       return incMonth === prevMonth;
     });
 
+    // Convert previous month expenses to profile currency
+    const prevExpensesTotal = prevExpenses.reduce((sum, exp) => {
+      const amountInProfileCurrency = convertCurrency(
+        exp.amount,
+        (exp as any).currency || 'USD',
+        profileCurrency
+      );
+      return sum + amountInProfileCurrency;
+    }, 0);
+
+    // Convert previous month income to profile currency
+    const prevIncomeTotal = prevIncome.reduce((sum, inc) => {
+      const amountInProfileCurrency = convertCurrency(
+        inc.amount,
+        (inc as any).currency || 'USD',
+        profileCurrency
+      );
+      return sum + amountInProfileCurrency;
+    }, 0);
+
     return {
-      expenses: prevExpenses.reduce((sum, exp) => sum + exp.amount, 0),
-      income: prevIncome.reduce((sum, inc) => sum + inc.amount, 0)
+      expenses: prevExpensesTotal,
+      income: prevIncomeTotal
     };
-  }, [expenses, income, selectedMonth]);
+  }, [expenses, income, selectedMonth, userSettings]);
 
   // Calculate real financial data for selected month with comparisons
   const financialStats = useMemo(() => {
@@ -165,6 +191,21 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
+    
+    // Include portfolio value in net worth
+    const totalPortfolioValue = holdings.reduce((sum, holding) => {
+      const currentPrice = holding.current_price || holding.average_price || 0;
+      const valueInHoldingCurrency = holding.shares * currentPrice;
+      const valueInProfileCurrency = convertCurrency(
+        valueInHoldingCurrency,
+        holding.currency || 'USD',
+        profileCurrency
+      );
+      return sum + valueInProfileCurrency;
+    }, 0);
+    
+    // Net worth = Assets + Portfolio Value
+    const totalNetWorth = totalAssets + totalPortfolioValue;
 
     // Calculate percentage changes from previous month
     const incomeChange = previousMonthData.income > 0
@@ -181,9 +222,9 @@ export default function Dashboard() {
     return {
       income: { amount: totalIncome, change: incomeChange },
       expenses: { amount: totalExpenses, change: expenseChange },
-      netWorth: { amount: totalAssets, change: netWorthChange }
+      netWorth: { amount: totalNetWorth, change: netWorthChange }
     };
-  }, [monthExpenses, monthIncome, assets, previousMonthData, userSettings]);
+  }, [monthExpenses, monthIncome, assets, holdings, previousMonthData, userSettings]);
 
   const formatCurrency = useMemo(() => getCurrencyFormatter(userSettings?.currency || 'USD'), [userSettings?.currency]);
 
@@ -344,43 +385,85 @@ export default function Dashboard() {
   }, [monthExpenses, monthIncome, userSettings]);
 
   // Calculate net worth trend for last 12 months
+  // Strategy: Always recalculate from actual transactions/assets for accuracy
+  // This ensures edits to past transactions are automatically reflected in the chart
+  // 
+  // How it works:
+  // - Net worth at end of month = Assets + Cumulative Income - Cumulative Expenses
+  // - When transactions are edited, charts automatically update because we recalculate
+  // - Monthly stats table is optional and used only as fallback if no transaction data exists
   const netWorthTrend = useMemo(() => {
     const data = [];
     const now = new Date();
-    const currentNetWorth = assets.reduce((sum, asset) => {
-      const valueInProfileCurrency = convertCurrency(
-        asset.amount,
-        (asset as any).currency || 'USD',
-        userSettings?.currency || 'USD'
-      );
-      return sum + valueInProfileCurrency;
-    }, 0);
+    const profileCurrency = userSettings?.currency || 'USD';
     
-    // Simulate historical net worth (in a real app, this would come from historical data)
+    // Calculate cumulative values up to each month
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
       
-      // Simulate growth from 80% to 100% of current net worth
-      const growthFactor = 0.80 + (i * 0.018);
-      const monthValue = currentNetWorth * growthFactor;
+      // Calculate cumulative income up to end of this month
+      const cumulativeIncome = income
+        .filter(inc => {
+          const incDate = new Date(inc.date);
+          return incDate <= monthEnd;
+        })
+        .reduce((sum, inc) => {
+          return sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency);
+        }, 0);
+      
+      // Calculate cumulative expenses up to end of this month
+      const cumulativeExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return expDate <= monthEnd;
+        })
+        .reduce((sum, exp) => {
+          return sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency);
+        }, 0);
+      
+      // Calculate assets that existed by end of this month
+      const monthAssets = assets
+        .filter(asset => {
+          const assetDate = new Date((asset as any).created_at || (asset as any).date || now);
+          return assetDate <= monthEnd;
+        })
+        .reduce((sum, asset) => {
+          return sum + convertCurrency(asset.amount, (asset as any).currency || 'USD', profileCurrency);
+        }, 0);
+      
+      // Calculate portfolio value (investments) that existed by end of this month
+      const monthPortfolioValue = holdings
+        .filter(holding => {
+          const holdingDate = new Date((holding as any).created_at || (holding as any).date || now);
+          return holdingDate <= monthEnd;
+        })
+        .reduce((sum, holding) => {
+          const currentPrice = holding.current_price || holding.average_price || 0;
+          const valueInHoldingCurrency = holding.shares * currentPrice;
+          return sum + convertCurrency(valueInHoldingCurrency, holding.currency || 'USD', profileCurrency);
+        }, 0);
+      
+      // Net worth = Assets + Portfolio Value + (Income - Expenses) up to that point
+      const monthNetWorth = monthAssets + monthPortfolioValue + (cumulativeIncome - cumulativeExpenses);
       
       data.push({
         month: monthLabel,
-        value: Math.round(monthValue * 100) / 100
+        value: Math.round(monthNetWorth * 100) / 100
       });
     }
     
     return data;
-  }, [assets, userSettings]);
+  }, [assets, holdings, income, expenses, userSettings]);
 
   return (
-    <div className="p-6 bg-slate-800 min-h-screen">
+    <div className="p-6 min-h-screen bg-[var(--background)] transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between animate-slide-in-up">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
-          <p className="text-slate-400">Welcome back, {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Dashboard</h1>
+          <p className="text-[var(--text-secondary)]">Welcome back, {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}</p>
         </div>
         
         {/* Month Selector */}
@@ -392,79 +475,85 @@ export default function Dashboard() {
 
       {/* Financial Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Link href="/income" className="bg-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+        <Link href="/income" className="glass-card rounded-2xl p-6 cursor-pointer group animate-scale-in">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-400 text-sm font-medium">Income</h3>
-            <DollarSign className="h-5 w-5 text-green-400" />
+            <h3 className="text-[var(--text-secondary)] text-base font-semibold">Income</h3>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <DollarSign className="h-5 w-5 text-white" />
+            </div>
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-2xl font-bold text-white">{formatCurrency(financialStats.income.amount)}</p>
+              <p className="text-3xl font-bold text-[var(--text-primary)]">{formatCurrency(financialStats.income.amount)}</p>
               <div className="flex items-center mt-2">
                 {financialStats.income.change >= 0 ? (
                   <>
-                    <TrendingUp className="h-4 w-4 text-green-400 mr-1" />
-                    <span className="text-green-400 text-sm">+{financialStats.income.change.toFixed(1)}%</span>
+                    <TrendingUp className="h-4 w-4 text-[var(--accent-success)] mr-1" />
+                    <span className="text-[var(--accent-success)] text-sm font-medium">+{financialStats.income.change.toFixed(1)}%</span>
                   </>
                 ) : (
                   <>
-                    <TrendingDown className="h-4 w-4 text-red-400 mr-1" />
-                    <span className="text-red-400 text-sm">{financialStats.income.change.toFixed(1)}%</span>
+                    <TrendingDown className="h-4 w-4 text-[var(--accent-error)] mr-1" />
+                    <span className="text-[var(--accent-error)] text-sm font-medium">{financialStats.income.change.toFixed(1)}%</span>
                   </>
                 )}
-                <span className="text-slate-500 text-xs ml-1">vs prev month</span>
+                <span className="text-[var(--text-tertiary)] text-xs ml-1">vs prev month</span>
               </div>
             </div>
           </div>
         </Link>
 
-        <Link href="/expenses" className="bg-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+        <Link href="/expenses" className="glass-card rounded-2xl p-6 cursor-pointer group animate-scale-in" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-400 text-sm font-medium">Expenses</h3>
-            <CreditCard className="h-5 w-5 text-red-400" />
+            <h3 className="text-[var(--text-secondary)] text-base font-semibold">Expenses</h3>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <CreditCard className="h-5 w-5 text-white" />
+            </div>
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-2xl font-bold text-white">{formatCurrency(financialStats.expenses.amount)}</p>
+              <p className="text-3xl font-bold text-[var(--text-primary)]">{formatCurrency(financialStats.expenses.amount)}</p>
               <div className="flex items-center mt-2">
                 {financialStats.expenses.change >= 0 ? (
                   <>
-                    <TrendingUp className="h-4 w-4 text-red-400 mr-1" />
-                    <span className="text-red-400 text-sm">+{financialStats.expenses.change.toFixed(1)}%</span>
+                    <TrendingUp className="h-4 w-4 text-[var(--accent-error)] mr-1" />
+                    <span className="text-[var(--accent-error)] text-sm font-medium">+{financialStats.expenses.change.toFixed(1)}%</span>
                   </>
                 ) : (
                   <>
-                    <TrendingDown className="h-4 w-4 text-green-400 mr-1" />
-                    <span className="text-green-400 text-sm">{financialStats.expenses.change.toFixed(1)}%</span>
+                    <TrendingDown className="h-4 w-4 text-[var(--accent-success)] mr-1" />
+                    <span className="text-[var(--accent-success)] text-sm font-medium">{financialStats.expenses.change.toFixed(1)}%</span>
                   </>
                 )}
-                <span className="text-slate-500 text-xs ml-1">vs prev month</span>
+                <span className="text-[var(--text-tertiary)] text-xs ml-1">vs prev month</span>
               </div>
             </div>
           </div>
         </Link>
 
-        <Link href="/assets" className="bg-slate-900 rounded-xl p-6 border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+        <Link href="/assets" className="rounded-2xl p-6 cursor-pointer group animate-scale-in bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-slate-400 text-sm font-medium">Net Worth</h3>
-            <Wallet className="h-5 w-5 text-blue-400" />
+            <h3 className="text-white text-base font-semibold">Net Worth</h3>
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <Wallet className="h-5 w-5 text-white" />
+            </div>
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className="text-2xl font-bold text-white">{formatCurrency(financialStats.netWorth.amount)}</p>
+              <p className="text-3xl font-bold text-white">{formatCurrency(financialStats.netWorth.amount)}</p>
               <div className="flex items-center mt-2">
                 {financialStats.netWorth.change >= 0 ? (
                   <>
-                    <TrendingUp className="h-4 w-4 text-green-400 mr-1" />
-                    <span className="text-green-400 text-sm">+{financialStats.netWorth.change.toFixed(1)}%</span>
+                    <TrendingUp className="h-4 w-4 text-white mr-1" />
+                    <span className="text-white text-sm font-medium">+{financialStats.netWorth.change.toFixed(1)}%</span>
                   </>
                 ) : (
                   <>
-                    <TrendingDown className="h-4 w-4 text-red-400 mr-1" />
-                    <span className="text-red-400 text-sm">{financialStats.netWorth.change.toFixed(1)}%</span>
+                    <TrendingDown className="h-4 w-4 text-white mr-1" />
+                    <span className="text-white text-sm font-medium">{financialStats.netWorth.change.toFixed(1)}%</span>
                   </>
                 )}
-                <span className="text-slate-500 text-xs ml-1">vs prev month</span>
+                <span className="text-white/70 text-xs ml-1">vs prev month</span>
               </div>
             </div>
           </div>
@@ -474,8 +563,8 @@ export default function Dashboard() {
       {/* Charts Section - Monthly Spending & Spending by Category */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Monthly Spending Chart */}
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-6">Monthly Spending (Last 12 Months)</h3>
+        <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Monthly Spending (Last 12 Months)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlySpendingData}>
@@ -510,26 +599,26 @@ export default function Dashboard() {
         </div>
 
         {/* Spending by Category */}
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+        <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '400ms' }}>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Spending by Category</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Spending by Category</h3>
             <div className="flex space-x-2">
               <button 
                 onClick={() => setSpendingPeriod('monthly')}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${
                   spendingPeriod === 'monthly' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg' 
+                    : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
                 }`}
               >
                 Monthly
               </button>
               <button 
                 onClick={() => setSpendingPeriod('yearly')}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${
                   spendingPeriod === 'yearly' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg' 
+                    : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
                 }`}
               >
                 Yearly
@@ -566,20 +655,20 @@ export default function Dashboard() {
             
             <div className="flex-1 ml-8">
               {spendingByCategory.categories.length === 0 ? (
-                <p className="text-slate-400 text-sm">No expenses yet. Add some expenses to see your spending breakdown.</p>
+                <p className="text-[var(--text-secondary)] text-sm">No expenses yet. Add some expenses to see your spending breakdown.</p>
               ) : (
-                spendingByCategory.categories.map((item) => (
-                <div key={item.name} className="flex items-center justify-between mb-3">
+                spendingByCategory.categories.map((item, index) => (
+                <div key={item.name} className="flex items-center justify-between mb-3 p-2 rounded-lg hover:bg-[var(--card-hover)] transition-all duration-300 animate-slide-in-right" style={{ animationDelay: `${index * 50}ms` }}>
                   <div className="flex items-center">
                     <div 
-                      className="w-3 h-3 rounded-full mr-3" 
+                      className="w-3 h-3 rounded-full mr-3 shadow-lg" 
                       style={{ backgroundColor: item.color }}
                     ></div>
-                    <span className="text-white text-sm">{item.name}</span>
+                    <span className="text-[var(--text-primary)] text-sm font-medium">{item.name}</span>
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-medium">{formatCurrency(item.value)}</div>
-                    <div className="text-slate-400 text-xs">({item.percentage}%)</div>
+                    <div className="text-[var(--text-primary)] font-semibold">{formatCurrency(item.value)}</div>
+                    <div className="text-[var(--text-tertiary)] text-xs">({item.percentage}%)</div>
                   </div>
                 </div>
                 ))
@@ -590,8 +679,8 @@ export default function Dashboard() {
       </div>
 
       {/* Cashflow Chart (Income vs Expenses) */}
-      <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 mb-8">
-        <h3 className="text-lg font-semibold text-white mb-6">Cashflow (Income vs. Expenses)</h3>
+      <div className="glass-card rounded-2xl p-6 mb-8 animate-slide-in-up" style={{ animationDelay: '500ms' }}>
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Cashflow (Income vs. Expenses)</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={cashflowData}>
@@ -625,8 +714,8 @@ export default function Dashboard() {
       {/* Savings Rate Gauge, Subscriptions, and Net Worth Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         {/* Savings Rate Gauge */}
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-6">Savings Rate</h3>
+        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '600ms' }}>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Savings Rate</h3>
           <div className="flex flex-col items-center justify-center py-8">
             <div className="relative w-48 h-48">
               <svg className="w-full h-full transform -rotate-90">
@@ -634,7 +723,7 @@ export default function Dashboard() {
                   cx="96"
                   cy="96"
                   r="80"
-                  stroke="#334155"
+                  stroke="var(--card-border)"
                   strokeWidth="16"
                   fill="none"
                 />
@@ -642,31 +731,32 @@ export default function Dashboard() {
                   cx="96"
                   cy="96"
                   r="80"
-                  stroke={savingsRate >= 50 ? '#10B981' : savingsRate >= 20 ? '#F59E0B' : '#EF4444'}
+                  stroke={savingsRate >= 50 ? 'var(--accent-success)' : savingsRate >= 20 ? 'var(--accent-warning)' : 'var(--accent-error)'}
                   strokeWidth="16"
                   fill="none"
                   strokeDasharray={`${(savingsRate / 100) * 502.4} 502.4`}
                   strokeLinecap="round"
+                  className="transition-all duration-500"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-bold text-white">{savingsRate}%</span>
-                <span className="text-slate-400 text-sm mt-1">of income</span>
+                <span className="text-4xl font-bold text-[var(--text-primary)]">{savingsRate}%</span>
+                <span className="text-[var(--text-secondary)] text-sm mt-1">of income</span>
               </div>
             </div>
-            <p className="text-slate-400 text-sm mt-4 text-center">
+            <p className="text-[var(--text-secondary)] text-xs mt-4 text-center">
               Monthly savings rate = (Income – Expenses) / Income
             </p>
           </div>
         </div>
 
         {/* Subscriptions */}
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
+        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '700ms' }}>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-white">Subscriptions</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h3>
             <Link 
               href="/expenses"
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+              className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm transition-colors font-medium"
             >
               Manage
             </Link>
@@ -674,21 +764,21 @@ export default function Dashboard() {
           
           {subscriptions.length === 0 ? (
             <div className="text-center py-12">
-              <Calendar className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">No subscriptions yet</p>
+              <Calendar className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-3" />
+              <p className="text-[var(--text-secondary)] text-sm">No subscriptions yet</p>
               <Link 
                 href="/expenses"
-                className="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block"
+                className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm mt-2 inline-block font-medium"
               >
                 Add your first subscription
               </Link>
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {subscriptions
                 .filter(sub => sub.is_active)
                 .slice(0, 8)
-                .map((sub) => {
+                .map((sub, index) => {
                   const daysUntilBilling = Math.ceil(
                     (new Date(sub.next_billing_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                   );
@@ -697,26 +787,27 @@ export default function Dashboard() {
                   return (
                     <div
                       key={sub.id}
-                      className={`p-3 rounded-lg border transition-colors ${
+                      className={`p-3 rounded-xl transition-all duration-300 hover:scale-102 animate-slide-in-right ${
                         isUpcoming 
-                          ? 'bg-orange-900/20 border-orange-700' 
-                          : 'bg-slate-800 border-slate-700'
+                          ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-[var(--accent-warning)]' 
+                          : 'bg-[var(--card-bg)] border border-[var(--card-border)]'
                       }`}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm truncate">{sub.name}</p>
-                          <p className="text-slate-400 text-xs mt-0.5">
+                          <p className="text-[var(--text-primary)] font-medium text-sm truncate">{sub.name}</p>
+                          <p className="text-[var(--text-secondary)] text-xs mt-0.5">
                             {getCurrencyFormatter(sub.currency)(sub.amount)} / {sub.billing_cycle}
                           </p>
                         </div>
                         <div className="text-right ml-2">
                           {isUpcoming ? (
-                            <span className="text-orange-400 text-xs font-medium">
+                            <span className="text-[var(--accent-warning)] text-xs font-semibold px-2 py-1 rounded-lg bg-[var(--accent-warning)]/10">
                               {daysUntilBilling === 0 ? 'Today' : `${daysUntilBilling}d`}
                             </span>
                           ) : (
-                            <span className="text-slate-500 text-xs">
+                            <span className="text-[var(--text-tertiary)] text-xs">
                               {new Date(sub.next_billing_date).toLocaleDateString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric' 
@@ -731,7 +822,7 @@ export default function Dashboard() {
               {subscriptions.filter(sub => sub.is_active).length > 8 && (
                 <Link 
                   href="/expenses"
-                  className="block text-center text-blue-400 hover:text-blue-300 text-sm py-2"
+                  className="block text-center text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm py-2 font-medium"
                 >
                   View all ({subscriptions.filter(sub => sub.is_active).length})
                 </Link>
@@ -741,8 +832,8 @@ export default function Dashboard() {
         </div>
 
         {/* Net Worth Trend */}
-        <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-          <h3 className="text-lg font-semibold text-white mb-6">Net Worth Trend (12 Months)</h3>
+        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '800ms' }}>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Net Worth Trend (12 Months)</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={netWorthTrend}>

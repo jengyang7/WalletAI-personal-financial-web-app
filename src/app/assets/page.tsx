@@ -57,58 +57,54 @@ export default function AssetsPage() {
   const [showCustomType, setShowCustomType] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadAssets();
-      loadSettings();
-      loadHoldings();
-    }
-  }, [user]);
+    if (!user?.id) return;
+    
+    let mounted = true;
+    
+    const loadData = async () => {
+      try {
+        // Load settings
+        const { data: settingsData } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        if (mounted && settingsData) {
+          setUserSettings(settingsData);
+          setNewAsset(prev => ({ ...prev, currency: settingsData.currency || 'USD' }));
+        }
 
-  const loadSettings = async () => {
-    const { data } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', user?.id)
-      .single();
-    if (data) {
-      setUserSettings(data);
-      setNewAsset(prev => ({ ...prev, currency: data.currency || 'USD' }));
-    }
-  };
+        // Load holdings
+        const { data: holdingsData, error: holdingsError } = await supabase
+          .from('holdings')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        if (mounted && !holdingsError) setHoldings((holdingsData || []) as Holding[]);
+
+        // Load assets
+        const { data: assetsData, error: assetsError } = await supabase
+          .from('assets')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (mounted && !assetsError) setAssets((assetsData || []) as Asset[]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
 
   const profileCurrency = userSettings?.currency || 'USD';
   const formatBy = (code?: string) => getCurrencyFormatter(code || profileCurrency);
   const formatCurrency = getCurrencyFormatter(profileCurrency);
   const symbol = getCurrencySymbol(newAsset.currency || profileCurrency);
-
-  const loadHoldings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('holdings')
-        .select('*')
-        .order('updated_at', { ascending: false });
-      if (error) throw error;
-      setHoldings((data || []) as Holding[]);
-    } catch (e) {
-      console.error('Error loading holdings:', e);
-    }
-  };
-
-  const loadAssets = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('assets')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAssets(data || []);
-    } catch (error) {
-      console.error('Error loading assets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Group assets by type
   const groupedAssets = useMemo(() => {
@@ -263,25 +259,31 @@ export default function AssetsPage() {
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-800 min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="p-6 bg-[var(--background)] min-h-screen flex items-center justify-center transition-colors duration-300">
+        <div className="text-center animate-scale-in">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div>
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div>
+          </div>
+          <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-slate-800 min-h-screen">
+    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Assets</h1>
-        <p className="text-slate-400">Track all your assets and net worth</p>
+      <div className="mb-8 animate-slide-in-up">
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Assets</h1>
+        <p className="text-[var(--text-secondary)]">Track all your assets and net worth</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Total Net Worth Card and Add Form */}
         <div className="lg:col-span-1 space-y-6">
           {/* Total Assets Card */}
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+          <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-2xl animate-scale-in">
             <div className="flex items-center mb-2">
               <TrendingUp className="h-6 w-6 mr-2" />
               <h3 className="text-lg font-semibold">Total Net Worth</h3>
@@ -289,18 +291,18 @@ export default function AssetsPage() {
             <p className="text-3xl font-bold">
               {formatCurrency(totalAssets + totalPortfolioValue)}
             </p>
-            <p className="text-blue-100 text-sm mt-1">
+            <p className="text-white text-sm mt-1">
               Assets: {formatCurrency(totalAssets)} + Portfolio: {formatCurrency(totalPortfolioValue)}
             </p>
           </div>
 
           {/* Add New Asset Form */}
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-6">Add New Asset</h2>
+          <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '100ms' }}>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Asset</h2>
             
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="name" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Asset Name
                 </label>
                 <input
@@ -309,13 +311,13 @@ export default function AssetsPage() {
                   value={newAsset.name}
                   onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
                   placeholder="e.g., Savings Account, Bitcoin Wallet"
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="type" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="type" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Asset Type
                 </label>
                 {!showCustomType ? (
@@ -324,7 +326,7 @@ export default function AssetsPage() {
                       id="type"
                       value={newAsset.type}
                       onChange={(e) => setNewAsset({ ...newAsset, type: e.target.value })}
-                      className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                     >
                       {defaultAssetTypes.map((type) => (
                         <option key={type} value={type}>
@@ -347,7 +349,7 @@ export default function AssetsPage() {
                       value={newAsset.customType}
                       onChange={(e) => setNewAsset({ ...newAsset, customType: e.target.value })}
                       placeholder="Enter custom asset type"
-                      className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                       required
                     />
                     <button
@@ -356,7 +358,7 @@ export default function AssetsPage() {
                         setShowCustomType(false);
                         setNewAsset({ ...newAsset, customType: '' });
                       }}
-                      className="text-sm text-slate-400 hover:text-slate-300"
+                      className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
                       ← Back to preset types
                     </button>
@@ -365,7 +367,7 @@ export default function AssetsPage() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Description (Optional)
                 </label>
                 <input
@@ -374,16 +376,16 @@ export default function AssetsPage() {
                   value={newAsset.description}
                   onChange={(e) => setNewAsset({ ...newAsset, description: e.target.value })}
                   placeholder="e.g., Emergency fund"
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 />
               </div>
 
               <div>
-                <label htmlFor="amount" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Current Value
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400">{symbol}</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{symbol}</span>
                   <input
                     type="number"
                     id="amount"
@@ -392,18 +394,18 @@ export default function AssetsPage() {
                     placeholder="0.00"
                     step="0.01"
                     min="0"
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
                   value={newAsset.currency as any}
                   onChange={(e) => setNewAsset({ ...newAsset, currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -413,7 +415,7 @@ export default function AssetsPage() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all duration-300 flex items-center justify-center shadow-lg liquid-button"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Asset
@@ -423,22 +425,22 @@ export default function AssetsPage() {
         </div>
 
         {/* Assets List Grouped by Type */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           {/* Portfolio Summary (Synced from Investments) */}
           {totalPortfolioValue > 0 && (
-            <div className="bg-slate-900 rounded-xl p-6 border border-slate-700 mb-6">
+            <div className="glass-card rounded-2xl p-6 mb-6 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-white mb-2">Investment Portfolio</h2>
-                  <p className="text-slate-400 text-sm">Synced from Investments page</p>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Investment Portfolio</h2>
+                  <p className="text-[var(--text-secondary)] text-sm">Synced from Investments page</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-white">
+                  <p className="text-2xl font-bold text-[var(--text-primary)]">
                     {formatCurrency(totalPortfolioValue)}
                   </p>
                   <a 
                     href="/investments" 
-                    className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-block"
+                    className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm mt-1 inline-block font-medium transition-colors"
                   >
                     View Details →
                   </a>
@@ -447,13 +449,13 @@ export default function AssetsPage() {
             </div>
           )}
 
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-6">Your Assets</h2>
+          <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Your Assets</h2>
             
             {assets.length === 0 ? (
               <div className="text-center py-12">
-                <Wallet className="h-12 w-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">No assets recorded yet. Add your first asset to get started!</p>
+                <Wallet className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-4" />
+                <p className="text-[var(--text-secondary)]">No assets recorded yet. Add your first asset to get started!</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -469,8 +471,8 @@ export default function AssetsPage() {
                     <div key={type}>
                       {/* Type Header */}
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-white font-semibold">{type}</h3>
-                        <span className="text-blue-400 text-sm font-medium">
+                        <h3 className="text-[var(--text-primary)] font-semibold">{type}</h3>
+                        <span className="text-[var(--accent-primary)] text-sm font-medium">
                           {formatCurrency(typeTotal)}
                         </span>
                       </div>
@@ -481,21 +483,21 @@ export default function AssetsPage() {
                           <div
                             key={asset.id}
                             onClick={() => setEditingAsset(asset)}
-                            className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
+                            className="flex items-center justify-between p-4 glass-card rounded-xl hover:bg-[var(--card-hover)] hover:scale-102 transition-all duration-300 cursor-pointer"
                           >
                             <div className="flex items-center flex-1">
                               <div className={`p-3 bg-gradient-to-br ${gradientClass} rounded-lg mr-4`}>
                                 <Wallet className="h-5 w-5 text-white" />
                               </div>
                               <div className="flex-1">
-                                <h3 className="text-white font-medium">{asset.name}</h3>
+                                <h3 className="text-[var(--text-primary)] font-medium">{asset.name}</h3>
                                 {asset.description && (
-                                  <p className="text-slate-400 text-sm">{asset.description}</p>
+                                  <p className="text-[var(--text-secondary)] text-sm">{asset.description}</p>
                                 )}
                               </div>
                             </div>
                             <div className="flex items-center space-x-4">
-                              <p className="text-white font-semibold">
+                              <p className="text-[var(--accent-success)] font-semibold">
                                 {formatBy(asset.currency)(asset.amount)}
                               </p>
                               <div className="flex space-x-2">
@@ -505,7 +507,7 @@ export default function AssetsPage() {
                                     handleDeleteAsset(asset.id);
                                   }}
                                   disabled={deletingAsset === asset.id}
-                                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                                  className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                                   title="Delete asset"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -527,66 +529,66 @@ export default function AssetsPage() {
       {/* Edit Asset Modal */}
       {editingAsset && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in"
           onClick={() => setEditingAsset(null)}
         >
           <div 
-            className="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-700"
+            className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Edit Asset</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Asset</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Asset Name</label>
+                <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Asset Name</label>
                 <input
                   type="text"
                   value={editingAsset.name}
                   onChange={(e) => setEditingAsset({ ...editingAsset, name: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Asset Type</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Asset Type</label>
                 <input
                   type="text"
                   value={editingAsset.type}
                   onChange={(e) => setEditingAsset({ ...editingAsset, type: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description</label>
                 <input
                   type="text"
                   value={editingAsset.description || ''}
                   onChange={(e) => setEditingAsset({ ...editingAsset, description: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Current Value</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Current Value</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400">{getCurrencySymbol((editingAsset as any)?.currency || profileCurrency)}</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingAsset as any)?.currency || profileCurrency)}</span>
                   <input
                     type="number"
                     value={editingAsset.amount}
                     onChange={(e) => setEditingAsset({ ...editingAsset, amount: parseFloat(e.target.value) })}
                     step="0.01"
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
                   value={(editingAsset as any).currency || profileCurrency}
                   onChange={(e) => setEditingAsset({ ...(editingAsset as any), currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -597,13 +599,13 @@ export default function AssetsPage() {
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={() => setEditingAsset(null)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 glass-card hover:bg-[var(--card-hover)] text-[var(--text-primary)] py-2.5 px-4 rounded-xl transition-all duration-300 font-medium liquid-button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateAsset}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 bg-[var(--accent-primary)] hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg liquid-button"
                 >
                   Save Changes
                 </button>

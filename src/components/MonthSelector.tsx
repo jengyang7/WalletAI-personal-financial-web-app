@@ -13,8 +13,9 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
   const [showModal, setShowModal] = useState(false);
   
   const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - 4 + i); // Last 5 years to current year
+  const nextYear = currentYear + 1;
+  // Show last 4 years, current year, and next year
+  const years = Array.from({ length: 6 }, (_, i) => currentYear - 4 + i); // e.g. 2022–2027 when currentYear=2026
   const months = [
     { value: '01', label: 'January' },
     { value: '02', label: 'February' },
@@ -86,15 +87,15 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
       <div className="flex items-center space-x-2">
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center space-x-2 bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white hover:bg-slate-800 transition-colors"
+          className="flex items-center space-x-2 glass-card rounded-xl px-4 py-2 text-[var(--text-primary)] hover:scale-105 transition-all duration-300 liquid-button shadow-lg"
         >
-          <Calendar className="h-4 w-4" />
-          <span>{getDisplayText()}</span>
+          <Calendar className="h-4 w-4 text-[var(--accent-primary)]" />
+          <span className="font-medium">{getDisplayText()}</span>
         </button>
 
         <button
           onClick={handlePrevMonth}
-          className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-white hover:bg-slate-800 transition-colors"
+          className="p-2 glass-card rounded-xl text-[var(--text-primary)] hover:scale-105 hover:bg-[var(--card-hover)] transition-all duration-300 liquid-button shadow-lg"
           title="Previous month"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -103,7 +104,7 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
         <button
           onClick={handleNextMonth}
           disabled={isCurrentMonth()}
-          className="p-2 bg-slate-900 border border-slate-600 rounded-lg text-white hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 glass-card rounded-xl text-[var(--text-primary)] hover:scale-105 hover:bg-[var(--card-hover)] transition-all duration-300 liquid-button shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           title="Next month"
         >
           <ChevronRight className="h-4 w-4" />
@@ -112,18 +113,18 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
 
       {showModal && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in"
           onClick={() => setShowModal(false)}
         >
           <div 
-            className="bg-slate-900 rounded-xl p-6 w-full max-w-2xl border border-slate-700 max-h-[80vh] overflow-y-auto"
+            className="glass-card rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Select Month</h3>
+              <h3 className="text-xl font-semibold text-[var(--text-primary)]">Select Month</h3>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2 text-[var(--text-secondary)] hover:text-[var(--accent-error)] hover:bg-[var(--sidebar-hover)] rounded-xl transition-all duration-300 liquid-button"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -132,10 +133,10 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
             {showAllOption && (
               <button
                 onClick={handleAllHistory}
-                className={`w-full mb-4 p-3 rounded-lg text-left font-medium transition-colors ${
+                className={`w-full mb-4 p-3 rounded-xl text-left font-medium transition-all duration-300 liquid-button shadow-lg ${
                   selectedMonth === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
                 }`}
               >
                 📅 View All Time
@@ -145,24 +146,34 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
             <div className="space-y-6">
               {years.reverse().map(year => (
                 <div key={year}>
-                  <h4 className="text-lg font-semibold text-white mb-3">{year}</h4>
+                  <h4 className="text-lg font-semibold text-[var(--text-primary)] mb-3">{year}</h4>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {months.map(month => {
                       const value = `${year}-${month.value}`;
                       const isSelected = selectedMonth === value;
-                      const isFuture = new Date(`${year}-${month.value}-01`) > new Date();
+                      // Allow all months in nextYear to be selectable, but prevent years beyond that
+                      const monthDate = new Date(`${year}-${month.value}-01`);
+                      const now = new Date();
+                      let isFuture = false;
+                      if (year > nextYear) {
+                        isFuture = true;
+                      } else if (year === nextYear) {
+                        isFuture = false;
+                      } else {
+                        isFuture = monthDate > now;
+                      }
                       
                       return (
                         <button
                           key={month.value}
                           onClick={() => handleMonthSelect(year, month.value)}
                           disabled={isFuture}
-                          className={`p-3 rounded-lg text-sm font-medium transition-colors ${
+                          className={`p-3 rounded-xl text-sm font-medium transition-all duration-300 liquid-button shadow-lg ${
                             isSelected
-                              ? 'bg-blue-600 text-white'
+                              ? 'bg-[var(--accent-primary)] text-white'
                               : isFuture
-                              ? 'bg-slate-800/50 text-slate-600 cursor-not-allowed'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                              ? 'glass-card text-[var(--text-tertiary)] opacity-40 cursor-not-allowed'
+                              : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:scale-105'
                           }`}
                         >
                           {month.label}

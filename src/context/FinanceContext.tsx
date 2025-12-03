@@ -18,6 +18,7 @@ interface Budget {
   category: string;
   allocated_amount: number;
   spent: number;
+  currency?: string;
 }
 
 interface Subscription {
@@ -104,7 +105,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
             id: budget.id,
             category: budget.category,
             allocated_amount: budget.allocated_amount,
-            spent
+            spent,
+            currency: budget.currency
           };
         })
       );

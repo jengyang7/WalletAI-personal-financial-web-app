@@ -12,10 +12,12 @@ import {
   LogOut,
   CreditCard,
   Wallet,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
+import ThemeToggle from './ThemeToggle';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -40,30 +42,41 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="flex h-screen w-64 flex-col bg-slate-900 text-white">
+    <div className="glass-sidebar flex h-screen w-64 flex-col shadow-2xl animate-slide-in-right bg-white dark:bg-[#121212]">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6">
-        <CreditCard className="h-8 w-8 text-blue-400" />
-        <span className="ml-3 text-xl font-semibold">FinAI</span>
+      <div className="flex h-16 items-center justify-between px-6 border-b border-[var(--glass-border)] bg-transparent">
+        <div className="flex items-center">
+          <div className="relative">
+            <CreditCard className="h-8 w-8 text-[var(--accent-primary)]" />
+            <Sparkles className="h-3 w-3 text-[var(--accent-success)] absolute -top-1 -right-1 animate-pulse" />
+          </div>
+          <span className="ml-3 text-xl font-semibold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">
+            FinAI
+          </span>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6">
-        <ul className="space-y-2">
-          {navigation.map((item) => {
+      <nav className="flex-1 px-4 py-4 overflow-y-auto bg-transparent">
+        <ul className="space-y-1">
+          {navigation.map((item, index) => {
             const isActive = pathname === item.href;
             return (
-              <li key={item.name}>
+              <li 
+                key={item.name}
+                style={{ animationDelay: `${index * 50}ms` }}
+                className="animate-slide-in-right"
+              >
                 <Link
                   href={item.href}
                   className={clsx(
-                    'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'group flex items-center rounded-2xl px-4 py-3.5 text-base font-medium',
                     isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white shadow-lg shadow-blue-500/30'
+                      : 'sidebar-nav-hover text-[var(--text-secondary)]'
                   )}
                 >
-                  <item.icon className="mr-3 h-5 w-5" />
+                  <item.icon className={clsx("mr-3.5 h-5 w-5", isActive ? "text-white" : "text-[var(--text-tertiary)] group-hover:text-white")} />
                   {item.name}
                 </Link>
               </li>
@@ -72,31 +85,43 @@ export default function Sidebar() {
         </ul>
       </nav>
 
+      {/* Theme Toggle */}
+      <div className="px-4 pb-4 border-t border-[var(--glass-border)]">
+        <div className="pt-4">
+          <ThemeToggle />
+        </div>
+      </div>
+
       {/* User Profile */}
-      <div className="border-t border-slate-800 p-4">
-        <div className="flex items-center">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center">
-            <span className="text-sm font-medium">SC</span>
+      <div className="border-t-2 border-[var(--glass-border)] p-4 bg-transparent">
+        <div className="flex items-center mb-4">
+          <div className="relative">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg">
+              <span className="text-sm font-semibold text-white">
+                {(user?.user_metadata?.display_name?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+              </span>
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-[var(--accent-success)] rounded-full border-2 border-[var(--background)]"></div>
           </div>
-          <div className="ml-3">
-            <div className="text-sm font-medium">
+          <div className="ml-3 flex-1 min-w-0">
+            <div className="text-sm font-medium text-[var(--text-primary)] truncate">
               {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}
             </div>
-            <div className="text-xs text-slate-400">{user?.email}</div>
+            <div className="text-xs text-[var(--text-secondary)] truncate">{user?.email}</div>
           </div>
         </div>
         
-        <div className="mt-4 space-y-1">
+        <div className="space-y-1">
           <Link
             href="/settings"
-            className="flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+            className="flex items-center rounded-xl px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all duration-300 hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] border border-transparent hover:border-[var(--glass-border)]"
           >
             <Settings className="mr-3 h-4 w-4" />
             Settings
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+            className="w-full flex items-center rounded-xl px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all duration-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-[var(--accent-error)] border border-transparent hover:border-red-200 dark:hover:border-red-900/50"
           >
             <LogOut className="mr-3 h-4 w-4" />
             Logout

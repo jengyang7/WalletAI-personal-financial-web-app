@@ -1,462 +1,406 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, Plus, DollarSign } from 'lucide-react';
+import { Bot, Send, Sparkles, TrendingUp, Trash2, Minimize2, Maximize2, MoreHorizontal, Zap } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
+import { useMonth } from '@/context/MonthContext';
+import { gemini } from '@/lib/gemini';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  action?: {
-    type: 'add_expense' | 'add_budget' | 'add_goal';
-    data: any;
-  };
+  functionCalled?: string;
+  functionResult?: any;
 }
 
-interface Suggestion {
-  id: string;
-  title: string;
-  description: string;
-  type: 'alert' | 'suggestion' | 'opportunity';
-}
-
-const mockSuggestions: Suggestion[] = [
+const quickActions = [
   {
     id: '1',
-    title: 'Spending Alert',
-    description: "You've spent $320 on dining this month, which is 20% higher than your average. Consider cooking at home to save.",
-    type: 'alert'
+    title: 'Analyze Spending',
+    icon: <TrendingUp className="h-3 w-3 mr-1" />,
+    query: 'Show me my spending summary for this month',
+    color: 'from-blue-500 to-cyan-500'
   },
   {
     id: '2',
-    title: 'Smart Categorization',
-    description: 'I can help categorize your expenses automatically. Just tell me what you spent money on!',
-    type: 'suggestion'
+    title: 'Check Budgets',
+    icon: <Sparkles className="h-3 w-3 mr-1" />,
+    query: 'How am I doing with my budgets?',
+    color: 'from-purple-500 to-pink-500'
   },
   {
     id: '3',
-    title: 'Voice Commands',
-    description: 'Try saying: "I spent $15 on lunch today" or "Add $500 budget for groceries"',
-    type: 'opportunity'
+    title: 'Recent Expenses',
+    icon: <Zap className="h-3 w-3 mr-1" />,
+    query: 'What are my biggest expenses this month?',
+    color: 'from-amber-500 to-orange-500'
   }
 ];
 
 export default function AIAdvisor() {
-  const { addExpense, addBudget } = useFinance();
+  const { reloadBudgets } = useFinance();
   const { user } = useAuth();
+  const { selectedMonth } = useMonth();
   const [message, setMessage] = useState('');
-  
+  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const getUserName = () => {
     if (!user) return 'there';
     return user.user_metadata?.display_name || user.email?.split('@')[0] || 'there';
   };
-  
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: `Hello ${getUserName()}! I'm your AI financial assistant. You can tell me about your expenses and I'll help you track them. Try saying something like "I spent $10 on lunch today" or "Add $500 budget for groceries".`,
-      sender: 'ai',
-      timestamp: new Date()
+
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('ai_chat_history');
+    const savedHistory = localStorage.getItem('ai_conversation_history');
+
+    if (savedMessages) {
+      const parsedMessages = JSON.parse(savedMessages);
+      // Convert string timestamps back to Date objects and filter out messages without text
+      const hydratedMessages = parsedMessages
+        .filter((msg: any) => msg.text) // Only include messages with text
+        .map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      setMessages(hydratedMessages);
+    } else {
+      // Initial greeting if no history
+      setMessages([
+        {
+          id: '1',
+          text: `Hello ${getUserName()}! 👋 I'm your AI financial assistant. \n\nI can help you track expenses, analyze spending, and manage budgets. Try asking: "What did I spend on groceries?"`,
+          sender: 'ai',
+          timestamp: new Date()
+        }
+      ]);
     }
-  ]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    if (savedHistory) {
+      setConversationHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  // Save chat history to localStorage whenever it changes
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('ai_chat_history', JSON.stringify(messages));
+    }
+    scrollToBottom();
+  }, [messages]);
+
+  // Save conversation history (context) to localStorage
+  useEffect(() => {
+    if (conversationHistory.length > 0) {
+      localStorage.setItem('ai_conversation_history', JSON.stringify(conversationHistory));
+    }
+  }, [conversationHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const parseCommandWithLLM = async (text: string): Promise<{ type: 'add_expense' | 'add_budget' | 'add_goal'; data: any } | null> => {
-    try {
-      const prompt = `
-You are a financial assistant that extracts structured data from natural language. 
-Analyze this message and return ONLY a JSON response (no other text):
-
-Message: "${text}"
-
-If this is about spending money/expenses, return:
-{
-  "type": "add_expense",
-  "data": {
-    "amount": <number>,
-    "description": "<what was purchased>",
-    "category": "<Food & Dining|Transportation|Groceries|Entertainment|Shopping|Utilities|Healthcare|Housing|Personal Care|Miscellaneous>"
-  }
-}
-
-If this is about setting a budget, return:
-{
-  "type": "add_budget", 
-  "data": {
-    "amount": <number>,
-    "category": "<category name>"
-  }
-}
-
-If this is NOT about expenses or budgets, return:
-{
-  "type": null
-}
-
-Examples:
-"I bought coffee for $5" → {"type": "add_expense", "data": {"amount": 5, "description": "coffee", "category": "Food & Dining"}}
-"purchased gas 40 dollars" → {"type": "add_expense", "data": {"amount": 40, "description": "gas", "category": "Transportation"}}
-"set 500 budget for food" → {"type": "add_budget", "data": {"amount": 500, "category": "food"}}
-`;
-
-      // Using Ollama (local LLM) - you need to install Ollama and pull a model like llama3.2
-      // const response = await fetch('http://localhost:11434/api/generate', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     model: 'llama3.2:1b', // Lightweight model
-      //     prompt: prompt,
-      //     stream: false,
-      //     options: {
-      //       temperature: 0.1, // Low temperature for consistent parsing
-      //       num_predict: 200
-      //     }
-      //   })
-      // });
-
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.1-8b-instant',
-          messages: [
-            { role: 'system', content: 'You are a financial data extraction assistant. Return only valid JSON.' },
-            { role: 'user', content: prompt }
-          ],
-          temperature: 0.1,
-          max_tokens: 200
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('LLM service unavailable');
-      }
-
-      const result = await response.json();
-      const parsedResponse = JSON.parse(result.choices[0].message.content.trim());
-            
-      if (parsedResponse.type === null) {
-        return null;
-      }
-
-      // Add date for expenses
-      if (parsedResponse.type === 'add_expense') {
-        parsedResponse.data.date = new Date().toISOString().split('T')[0];
-      }
-
-      return parsedResponse;
-    } catch (error) {
-      console.log('LLM parsing failed, falling back to regex:', error);
-      return parseCommandFallback(text);
+  const handleClearChat = () => {
+    if (confirm('Are you sure you want to clear the chat history?')) {
+      localStorage.removeItem('ai_chat_history');
+      localStorage.removeItem('ai_conversation_history');
+      setMessages([{
+        id: Date.now().toString(),
+        text: `Chat cleared! How can I help you now?`,
+        sender: 'ai',
+        timestamp: new Date()
+      }]);
+      setConversationHistory([]);
     }
   };
 
-  // Fallback regex parsing (your original code)
-  const parseCommandFallback = (text: string): { type: 'add_expense' | 'add_budget' | 'add_goal'; data: any } | null => {
-    const expensePatterns = [
-      /(?:i\s+)?(?:spent|paid|bought|purchased|got)\s+(?:\$?(\d+(?:\.\d{2})?)|(\d+(?:\.\d{2})?)\s*(?:dollars?|bucks?|usd))\s+(?:on\s+|for\s+)?(.+?)(?:\s+(?:today|yesterday))?$/i,
-      /(.+?)\s+(?:cost|was|for)\s+(?:\$?(\d+(?:\.\d{2})?)|(\d+(?:\.\d{2})?)\s*(?:dollars?|bucks?|usd))$/i,
-    ];
-
-    for (const pattern of expensePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        let amount, description;
-        if (match[1] && !match[3]) {
-          // Pattern: "spent $20 on lunch"
-          amount = parseFloat(match[1] || match[2]);
-          description = match[3];
-        } else {
-          // Pattern: "lunch cost $20"
-          description = match[1];
-          amount = parseFloat(match[2] || match[3]);
-        }
-        
-        return {
-          type: 'add_expense' as const,
-          data: {
-            amount,
-            description: description.trim(),
-            category: categorizeExpense(description),
-            date: new Date().toISOString().split('T')[0]
-          }
-        };
-      }
+  const formatMessage = (text: string) => {
+    // Safety check for undefined or null text
+    if (!text || typeof text !== 'string') {
+      return <span>Loading...</span>;
     }
-
-    const budgetPatterns = [
-      /(?:set|add|create)\s+(?:a\s+)?(?:\$?(\d+(?:\.\d{2})?)|(\d+(?:\.\d{2})?)\s*(?:dollars?|bucks?))\s+budget\s+(?:for\s+)?(.+)/i,
-    ];
-
-    for (const pattern of budgetPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        return {
-          type: 'add_budget' as const,
-          data: {
-            amount: parseFloat(match[1] || match[2]),
-            category: match[3].trim()
-          }
-        };
+    
+    // Split by lines to handle list items
+    const lines = text.split('\n');
+    
+    return lines.map((line, lineIndex) => {
+      // Handle list items starting with "* " or "- "
+      if (line.trim().match(/^[\*\-]\s/)) {
+        const content = line.trim().substring(2);
+        return (
+          <div key={lineIndex} className="flex items-start ml-2 mb-1">
+            <span className="mr-2 mt-1.5 w-1.5 h-1.5 bg-slate-400 rounded-full flex-shrink-0"></span>
+            <span>{formatBold(content)}</span>
+          </div>
+        );
       }
-    }
+      
+      // Handle empty lines
+      if (!line.trim()) {
+        return <div key={lineIndex} className="h-2"></div>;
+      }
 
-    return null;
+      // Standard lines
+      return (
+        <div key={lineIndex} className="mb-1">
+          {formatBold(line)}
+        </div>
+      );
+    });
   };
 
-  const categorizeExpense = (description: string): string => {
-    const desc = description.toLowerCase();
-    
-    if (desc.includes('lunch') || desc.includes('dinner') || desc.includes('restaurant') || desc.includes('food')) {
-      return 'Food & Dining';
-    }
-    if (desc.includes('gas') || desc.includes('fuel') || desc.includes('uber') || desc.includes('taxi') || desc.includes('transport')) {
-      return 'Transportation';
-    }
-    if (desc.includes('grocery') || desc.includes('groceries') || desc.includes('supermarket')) {
-      return 'Groceries';
-    }
-    if (desc.includes('movie') || desc.includes('game') || desc.includes('entertainment')) {
-      return 'Entertainment';
-    }
-    if (desc.includes('clothes') || desc.includes('clothing') || desc.includes('shirt') || desc.includes('shoes')) {
-      return 'Shopping';
+  const formatBold = (text: string) => {
+    // Safety check for undefined or null text
+    if (!text || typeof text !== 'string') {
+      return <span></span>;
     }
     
-    return 'Miscellaneous';
+    // Split by double asterisks for bold
+    const parts = text.split(/(\*\*[^\*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+      }
+      return <span key={index}>{part}</span>;
+    });
   };
 
   const handleSendMessage = async () => {
-    if (message.trim()) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: message,
-        sender: 'user',
-        timestamp: new Date()
+    if (!message.trim() || !user) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: message,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    const currentMessage = message;
+    setMessage('');
+    setIsTyping(true);
+
+    try {
+      // Call Gemini with function calling, passing the selected month from UI
+      const response = await gemini.chat(currentMessage, user.id, conversationHistory, selectedMonth);
+
+      // Update conversation history
+      setConversationHistory(prev => [
+        ...prev,
+        { role: 'user', parts: [{ text: currentMessage }] },
+        { role: 'model', parts: [{ text: response.text }] }
+      ]);
+
+      // Create AI response message
+      const aiResponse: Message = {
+        id: (Date.now() + 2).toString(),
+        text: response.text || 'I received your message but couldn\'t generate a proper response. Please try again.',
+        sender: 'ai',
+        timestamp: new Date(),
+        functionCalled: response.functionCalled,
+        functionResult: response.functionResult
       };
 
-      // Add user message immediately
-      setMessages(prev => [...prev, userMessage]);
-      setMessage('');
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
 
-      // Show "thinking" message
-      const thinkingMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: '🤔 Understanding your request...',
+      // Reload data if functions were called that modify data
+      if (response.functionCalled === 'create_expense' || response.functionCalled === 'create_budget') {
+        await reloadBudgets();
+        // Trigger a page reload to show new data
+        setTimeout(() => window.location.reload(), 1500);
+      }
+
+    } catch (error) {
+      console.error('Error processing message:', error);
+      setIsTyping(false);
+      const errorResponse: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "Sorry, I'm having trouble connecting to the AI service. Please check your connection or API key.",
         sender: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, thinkingMessage]);
-
-      try {
-        const command = await parseCommandWithLLM(userMessage.text);
-        let aiResponse: Message;
-
-      if (command) {
-        // Actually add the expense/budget to global state
-        if (command.type === 'add_expense') {
-          addExpense(command.data);
-          aiResponse = {
-            id: (Date.now() + 1).toString(),
-            text: `✅ Perfect! I've added your expense: $${command.data.amount.toFixed(2)} for "${command.data.description}" under ${command.data.category}. Check the Expenses page to see it!`,
-            sender: 'ai',
-            timestamp: new Date(),
-            action: command
-          };
-        } else if (command.type === 'add_budget') {
-          addBudget(command.data);
-          aiResponse = {
-            id: (Date.now() + 1).toString(),
-            text: `✅ Great! I've set a budget of $${command.data.amount.toFixed(2)} for ${command.data.category}. Check the Budget page to see it!`,
-            sender: 'ai',
-            timestamp: new Date(),
-            action: command
-          };
-        } else {
-          aiResponse = {
-            id: (Date.now() + 1).toString(),
-            text: "I understand you want to track something, but I need a bit more information. Try saying something like 'I spent $15 on lunch' or 'Add $500 budget for groceries'.",
-            sender: 'ai',
-            timestamp: new Date()
-          };
-        }
-      } else {
-        // General AI responses for non-command messages
-        const responses = [
-          "I'm here to help with your finances! You can tell me about expenses like 'I spent $20 on gas' or set budgets like 'Add $300 budget for entertainment'.",
-          "I can help you track expenses and manage budgets. Try commands like 'I bought coffee for $5' or 'Set $1000 budget for groceries'.",
-          "What would you like to do? I can help you add expenses, set budgets, or answer questions about your finances.",
-          "I'm your personal finance assistant! Tell me about your spending and I'll help organize it for you."
-        ];
-        
-        aiResponse = {
-          id: (Date.now() + 2).toString(),
-          text: responses[Math.floor(Math.random() * responses.length)],
-          sender: 'ai',
-          timestamp: new Date()
-        };
-      }
-
-      // Replace thinking message with actual response
-      setMessages(prev => prev.slice(0, -1).concat(aiResponse));
-
-      } catch (error) {
-        console.error('Error processing message:', error);
-        const errorResponse: Message = {
-          id: (Date.now() + 2).toString(),
-          text: "Sorry, I'm having trouble understanding that right now. Please try again or use a simpler format like 'I spent $10 on lunch'.",
-          sender: 'ai',
-          timestamp: new Date()
-        };
-        setMessages(prev => prev.slice(0, -1).concat(errorResponse));
-      }
+      setMessages(prev => [...prev, errorResponse]);
     }
   };
 
   return (
-    <div className="bg-slate-800 border-l border-slate-700 flex flex-col h-screen">
-      {/* Header */}
-      <div className="p-6 border-b border-slate-700">
-        <div className="flex items-center">
-          <Bot className="h-6 w-6 text-blue-400" />
-          <h2 className="ml-2 text-lg font-semibold text-white">AI Financial Assistant</h2>
-        </div>
-        <p className="text-sm text-slate-400 mt-1">
-          Tell me about your expenses and I'll help track them!
-        </p>
-      </div>
+    <div className="glass backdrop-blur-[60px] border-l border-[var(--glass-border)] flex flex-col h-screen shadow-2xl relative overflow-hidden transition-all duration-300">
+      {/* Background Glow Effects */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: '1s' }} />
 
-      {/* Quick Suggestions */}
-      <div className="p-4 border-b border-slate-700">
-        <div className="space-y-2">
-          {mockSuggestions.map((suggestion) => (
-            <div
-              key={suggestion.id}
-              className="bg-slate-900 rounded-lg p-3 border border-slate-700"
-            >
-              <div className="flex items-start">
-                <div className={`
-                  p-1 rounded mr-2 mt-0.5
-                  ${suggestion.type === 'alert' ? 'bg-red-500/20 text-red-400' : ''}
-                  ${suggestion.type === 'suggestion' ? 'bg-blue-500/20 text-blue-400' : ''}
-                  ${suggestion.type === 'opportunity' ? 'bg-green-500/20 text-green-400' : ''}
-                `}>
-                  <Sparkles className="h-3 w-3" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-xs font-medium text-white mb-1">
-                    {suggestion.title}
-                  </h4>
-                  <p className="text-xs text-slate-400">
-                    {suggestion.description}
-                  </p>
-                </div>
+      {/* Header */}
+      <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--card-bg)] backdrop-blur-sm z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] blur-md opacity-50 rounded-full"></div>
+              <div className="bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-2.5 rounded-full relative shadow-lg">
+                <Bot className="h-5 w-5 text-white" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[var(--accent-success)] border-2 border-[var(--background)] rounded-full animate-pulse"></div>
+            </div>
+            <div className="ml-3">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">FinAI Assistant</h2>
+              <div className="flex items-center text-xs text-[var(--text-secondary)]">
+                <Sparkles className="h-3 w-3 mr-1 text-[var(--accent-primary)]" />
+                <span>Gemini Powered</span>
               </div>
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleClearChat}
+              className="text-[var(--text-secondary)] hover:text-[var(--accent-error)] p-1.5 hover:bg-[var(--sidebar-hover)] rounded-lg transition-all duration-300 liquid-button"
+              title="Clear Chat History"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 hover:bg-[var(--sidebar-hover)] rounded-lg transition-all duration-300 liquid-button">
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="p-4 pb-2 z-10">
+        <div className="flex space-x-2 overflow-x-auto pb-2">
+          {quickActions.map((action, index) => (
+            <button
+              key={action.id}
+              onClick={() => setMessage(action.query)}
+              className="flex-shrink-0 flex items-center bg-[var(--card-bg)] hover:bg-[var(--card-hover)] border border-[var(--card-border)] rounded-full px-3 py-1.5 transition-all duration-300 group liquid-button shadow-lg animate-slide-in-right"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <span className={`text-transparent bg-clip-text bg-gradient-to-r ${action.color}`}>
+                {action.icon}
+              </span>
+              <span className="text-xs font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] whitespace-nowrap ml-1">
+                {action.title}
+              </span>
+            </button>
           ))}
         </div>
       </div>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex items-start gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
+            {/* AI Avatar (Left) */}
+            {msg.sender === 'ai' && (
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg mt-1">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+            )}
+
+            {/* Message Bubble */}
             <div className={`
-              max-w-[80%] rounded-lg p-3 text-sm
+              flex-1 rounded-2xl px-4 py-3 text-sm shadow-lg transition-all duration-300
               ${msg.sender === 'user' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-slate-900 text-slate-100 border border-slate-700'
+                ? 'glass-card text-[var(--text-primary)] rounded-tr-sm' 
+                : 'bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] text-white rounded-tl-sm'
               }
             `}>
-              {msg.sender === 'ai' && (
-                <div className="flex items-center mb-2">
-                  <Bot className="h-4 w-4 text-blue-400 mr-2" />
-                  <span className="text-xs text-slate-400">AI Assistant</span>
-                </div>
-              )}
-              <p>{msg.text}</p>
-              {msg.action && (
-                <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded text-xs">
-                  <div className="flex items-center text-green-400">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Action: {msg.action.type.replace('_', ' ')}
+              <div className={`leading-relaxed ${msg.sender === 'ai' ? 'text-white font-medium' : ''}`}>
+                {msg.text ? formatMessage(msg.text) : <span className={msg.sender === 'user' ? 'text-[var(--text-tertiary)]' : 'text-white/70'}>Loading response...</span>}
+              </div>
+              
+              {/* Function Call Result (kept for functionality, styled to match) */}
+              {msg.functionCalled && (
+                <div className={`mt-3 pt-3 border-t ${msg.sender === 'ai' ? 'border-[var(--text-tertiary)]' : 'border-white/20'}`}>
+                  <div className={`flex items-center text-[10px] uppercase tracking-wider mb-1 ${msg.sender === 'ai' ? 'text-[var(--text-secondary)]' : 'text-white/70'}`}>
+                    <Zap className={`h-3 w-3 mr-1 ${msg.sender === 'ai' ? 'text-[var(--accent-warning)]' : 'text-yellow-300'}`} />
+                    Action Executed
                   </div>
-                  {msg.action.type === 'add_expense' && (
-                    <div className="text-slate-300 mt-1">
-                      Amount: ${msg.action.data.amount}<br/>
-                      Category: {msg.action.data.category}
-                    </div>
-                  )}
-                  {msg.action.type === 'add_budget' && (
-                    <div className="text-slate-300 mt-1">
-                      Budget: ${msg.action.data.amount}<br/>
-                      Category: {msg.action.data.category}
-                    </div>
-                  )}
+                  <div className={`rounded-md p-2 text-xs font-mono ${msg.sender === 'ai' ? 'bg-[var(--card-bg)] text-[var(--text-secondary)]' : 'bg-white/10 text-white/80'}`}>
+                    {msg.functionCalled}
+                    {msg.functionResult && (
+                      <span className={`ml-2 ${msg.sender === 'ai' ? 'text-[var(--text-tertiary)]' : 'text-white/70'}`}>
+                        {msg.functionResult.success ? '✓' : '•'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
-              <div className="text-xs text-slate-400 mt-2">
-                {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              
+              {/* Timestamp */}
+              <div className={`
+                text-[10px] mt-1 text-right opacity-60
+                ${msg.sender === 'user' ? 'text-white/80' : 'text-[var(--text-tertiary)]'}
+              `}>
+                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+
+            {/* User Avatar (Right) */}
+            {msg.sender === 'user' && (
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg mt-1">
+                <div className="h-4 w-4 text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+        
+        {/* Typing Indicator */}
+        {isTyping && (
+          <div className="flex items-start gap-3 justify-start animate-fade-in">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg mt-1">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <div className="flex-1 glass-card text-[var(--text-primary)] rounded-2xl rounded-tl-sm px-4 py-4 shadow-lg">
+              <div className="flex space-x-1.5">
+                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
-        ))}
+        )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Action Buttons */}
-      <div className="p-4 border-t border-slate-700">
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <button
-            onClick={() => setMessage("I spent $15 on lunch today")}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 px-3 rounded-lg transition-colors"
-          >
-            Add Lunch Expense
-          </button>
-          <button
-            onClick={() => setMessage("Add $500 budget for groceries")}
-            className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 px-3 rounded-lg transition-colors"
-          >
-            Set Budget
-          </button>
-        </div>
-      </div>
-
       {/* Chat Input */}
-      <div className="p-4 border-t border-slate-700">
-        <div className="flex items-center space-x-2">
+      <div className="p-4 bg-[var(--card-bg)] backdrop-blur-md border-t border-[var(--glass-border)] z-10">
+        <div className="relative flex items-center group">
           <input
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Try: 'I spent $10 on lunch today'"
-            className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ask FinAI anything..."
+            className="w-full glass-card border border-[var(--card-border)] rounded-2xl pl-4 pr-12 py-3.5 text-[var(--text-primary)] text-sm placeholder-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all shadow-lg"
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!message.trim()}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white p-2 rounded-lg transition-colors"
+            disabled={!message.trim() || isTyping}
+            className="absolute right-2 p-2 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] hover:scale-110 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg liquid-button"
           >
             <Send className="h-4 w-4" />
           </button>
+        </div>
+        <div className="text-center mt-2">
+          <p className="text-[10px] text-[var(--text-tertiary)]">
+            AI can make mistakes. Verify financial data.
+          </p>
         </div>
       </div>
     </div>

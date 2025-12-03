@@ -31,10 +31,13 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   // Show loading spinner
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading...</p>
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center transition-colors duration-300">
+        <div className="text-center animate-scale-in">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div>
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div>
+          </div>
+          <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
         </div>
       </div>
     );

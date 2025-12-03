@@ -139,7 +139,8 @@ export default function IncomePage() {
           source: 'Salary',
           amount: '',
           description: '',
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          currency: userSettings?.currency || 'USD'
         });
       } catch (error) {
         console.error('Error adding income:', error);
@@ -256,19 +257,25 @@ export default function IncomePage() {
 
   if (loading) {
     return (
-      <div className="p-6 bg-slate-800 min-h-screen flex items-center justify-center">
-        <div className="text-slate-400">Loading...</div>
+      <div className="p-6 bg-[var(--background)] min-h-screen flex items-center justify-center transition-colors duration-300">
+        <div className="text-center animate-scale-in">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div>
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div>
+          </div>
+          <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 bg-slate-800 min-h-screen">
+    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex animate-slide-in-up items-center justify-between animate-slide-in-up">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Income</h1>
-          <p className="text-slate-400">Track all your income sources</p>
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Income</h1>
+          <p className="text-[var(--text-secondary)]">Track all your income sources</p>
         </div>
         <MonthSelector
           selectedMonth={selectedMonth}
@@ -277,7 +284,7 @@ export default function IncomePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Total Income Card and Add Form */}
         <div className="lg:col-span-1 space-y-6">
           {/* Total Income Card */}
@@ -289,7 +296,7 @@ export default function IncomePage() {
               </h3>
             </div>
             <p className="text-3xl font-bold">{formatCurrency(totalIncome)}</p>
-            <p className="text-green-100 text-sm mt-1">
+            <p className="text-white text-sm mt-1">
               {selectedMonth === 'all' 
                 ? new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : new Date(selectedMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -298,19 +305,19 @@ export default function IncomePage() {
           </div>
 
           {/* Add New Income Form */}
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-6">Add New Income</h2>
+          <div className="glass-card rounded-2xl p-6 animate-scale-in">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Income</h2>
             
             <form onSubmit={handleAddIncome} className="space-y-4">
               <div>
-                <label htmlFor="source" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="source" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Source
                 </label>
                 <select
                   id="source"
                   value={newIncome.source}
                   onChange={(e) => setNewIncome({ ...newIncome, source: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {incomeSources.map((source) => (
                     <option key={source} value={source}>
@@ -321,7 +328,7 @@ export default function IncomePage() {
               </div>
 
               <div>
-                <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Description
                 </label>
                 <input
@@ -330,17 +337,17 @@ export default function IncomePage() {
                   value={newIncome.description}
                   onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })}
                   placeholder="e.g., Monthly salary"
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="amount" className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="amount" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                     Amount
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-slate-400">{currencySymbol}</span>
+                    <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{currencySymbol}</span>
                     <input
                       type="number"
                       id="amount"
@@ -349,14 +356,14 @@ export default function IncomePage() {
                       placeholder="0.00"
                       step="0.01"
                       min="0"
-                      className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                       required
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="date" className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="date" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                     Date
                   </label>
                   <input
@@ -364,7 +371,7 @@ export default function IncomePage() {
                     id="date"
                     value={newIncome.date}
                     onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                     required
                   />
                 </div>
@@ -372,11 +379,11 @@ export default function IncomePage() {
 
               {/* Currency selector below amount */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
                   value={newIncome.currency as any}
                   onChange={(e) => setNewIncome({ ...newIncome, currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -386,7 +393,7 @@ export default function IncomePage() {
 
               <button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Income
@@ -396,20 +403,20 @@ export default function IncomePage() {
         </div>
 
         {/* Income List Grouped by Month/Day */}
-        <div className="lg:col-span-3">
-          <div className="bg-slate-900 rounded-xl p-6 border border-slate-700">
-            <h2 className="text-lg font-semibold text-white mb-6">Income History</h2>
+        <div className="lg:col-span-2">
+          <div className="glass-card rounded-2xl p-6 animate-scale-in">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Income History</h2>
             
             {income.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-slate-400">No income recorded yet. Add your first income to get started!</p>
+                <p className="text-[var(--text-secondary)]">No income recorded yet. Add your first income to get started!</p>
               </div>
             ) : (
               <div className="space-y-6">
                 {Object.entries(groupedIncome).map(([month, days]) => (
                   <div key={month}>
                     {/* Month Header */}
-                    <h3 className="text-white font-semibold mb-4 sticky top-0 bg-slate-900 py-2">{month}</h3>
+                    <h3 className="text-[var(--text-primary)] font-semibold mb-4 sticky top-0 py-2">{month}</h3>
                     
                     {Object.entries(days).map(([day, dayIncome]) => {
                       const dayTotal = dayIncome.reduce((sum, inc) => {
@@ -421,7 +428,7 @@ export default function IncomePage() {
                         <div key={day} className="mb-4">
                           {/* Day Header */}
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-slate-400 text-sm font-medium">{day}</span>
+                            <span className="text-[var(--text-secondary)] text-sm font-medium">{day}</span>
                             <span className="text-green-400 text-sm">Total: {formatCurrency(dayTotal)}</span>
                           </div>
                           
@@ -431,15 +438,15 @@ export default function IncomePage() {
                               <div
                                 key={inc.id}
                                 onClick={() => setEditingIncome(inc)}
-                                className="flex items-center justify-between p-4 bg-slate-800 rounded-lg border border-slate-700 hover:border-slate-600 transition-colors cursor-pointer"
+                                className="flex items-center justify-between p-4 glass-card rounded-xl hover:bg-[var(--card-hover)] transition-all duration-300 transition-colors cursor-pointer"
                               >
                                 <div className="flex items-center flex-1">
                                   <div className="p-3 bg-green-500/20 rounded-lg mr-4">
                                     <Briefcase className="h-5 w-5 text-green-400" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className="text-white font-medium">{inc.description || inc.source}</h3>
-                                    <p className="text-slate-400 text-sm">{inc.source}</p>
+                                    <h3 className="text-[var(--text-primary)] font-medium">{inc.description || inc.source}</h3>
+                                    <p className="text-[var(--text-secondary)] text-sm">{inc.source}</p>
                                   </div>
                                 </div>
                                 <div className="flex items-center space-x-4">
@@ -451,7 +458,7 @@ export default function IncomePage() {
                                         handleDeleteIncome(inc.id);
                                       }}
                                       disabled={deletingIncome === inc.id}
-                                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                                      className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                                       title="Delete income"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -475,22 +482,22 @@ export default function IncomePage() {
       {/* Edit Income Modal */}
       {editingIncome && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setEditingIncome(null)}
         >
           <div 
-            className="bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-700"
+            className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-white mb-4">Edit Income</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Income</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Source</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Source</label>
                 <select
                   value={editingIncome.source}
                   onChange={(e) => setEditingIncome({ ...editingIncome, source: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {incomeSources.map((source) => (
                     <option key={source} value={source}>
@@ -501,47 +508,47 @@ export default function IncomePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description</label>
                 <input
                   type="text"
                   value={editingIncome.description || ''}
                   onChange={(e) => setEditingIncome({ ...editingIncome, description: e.target.value })}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Amount</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Amount</label>
                   <div className="relative">
-                  <span className="absolute left-3 top-2 text-slate-400">{getCurrencySymbol((editingIncome as any)?.currency || profileCurrency)}</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingIncome as any)?.currency || profileCurrency)}</span>
                     <input
                       type="number"
                       value={editingIncome.amount}
                       onChange={(e) => setEditingIncome({ ...editingIncome, amount: parseFloat(e.target.value) })}
                       step="0.01"
-                      className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-14 pr-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 pl-14 pr-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Date</label>
+                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Date</label>
                   <input
                     type="date"
                     value={editingIncome.date}
                     onChange={(e) => setEditingIncome({ ...editingIncome, date: e.target.value })}
-                    className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Currency</label>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
                   value={(editingIncome as any).currency || profileCurrency}
                   onChange={(e) => setEditingIncome({ ...(editingIncome as any), currency: e.target.value } as any)}
-                  className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -552,13 +559,13 @@ export default function IncomePage() {
               <div className="flex space-x-3 pt-4">
                 <button
                   onClick={() => setEditingIncome(null)}
-                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 glass-card hover:bg-[var(--card-hover)] text-[var(--text-primary)] py-2.5 px-4 rounded-xl transition-all duration-300 font-medium liquid-button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateIncome}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="flex-1 bg-[var(--accent-primary)] hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg liquid-button"
                 >
                   Save Changes
                 </button>
