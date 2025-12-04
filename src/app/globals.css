@@ -3,7 +3,7 @@
 /* Apple Liquid Glass Design System */
 :root {
   /* Global UI scale (change this to resize the whole app) */
-  --ui-scale: 1.1;
+  --ui-scale: 1.0;
   
   /* Light Mode Colors */
   --background: #f5f5f7;

@@ -78,8 +78,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center transition-colors duration-300">
         <div className="text-center animate-scale-in">
           <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div>
-            <div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div>
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-[var(--text-tertiary)] border-t-transparent"></div>
           </div>
           <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
         </div>

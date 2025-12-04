@@ -125,10 +125,10 @@ export default function AIAdvisor() {
     if (!text || typeof text !== 'string') {
       return <span>Loading...</span>;
     }
-    
+
     // Split by lines to handle list items
     const lines = text.split('\n');
-    
+
     return lines.map((line, lineIndex) => {
       // Handle list items starting with "* " or "- "
       if (line.trim().match(/^[\*\-]\s/)) {
@@ -140,7 +140,7 @@ export default function AIAdvisor() {
           </div>
         );
       }
-      
+
       // Handle empty lines
       if (!line.trim()) {
         return <div key={lineIndex} className="h-2"></div>;
@@ -160,10 +160,10 @@ export default function AIAdvisor() {
     if (!text || typeof text !== 'string') {
       return <span></span>;
     }
-    
+
     // Split by double asterisks for bold
     const parts = text.split(/(\*\*[^\*]+\*\*)/g);
-    
+
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <strong key={index} className="font-bold text-white">{part.slice(2, -2)}</strong>;
@@ -252,9 +252,9 @@ export default function AIAdvisor() {
               <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">FinAI Assistant</h2>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
-            <button 
+            <button
               onClick={handleClearChat}
               className="text-[var(--text-secondary)] hover:text-[var(--accent-error)] p-1.5 hover:bg-[var(--sidebar-hover)] rounded-lg transition-all duration-300 liquid-button"
               title="Clear Chat History"
@@ -306,33 +306,33 @@ export default function AIAdvisor() {
             {/* Message Bubble */}
             <div className={`
               flex-1 rounded-2xl px-4 py-3 text-sm shadow-lg transition-all duration-300
-              ${msg.sender === 'user' 
-                ? 'glass-card text-[var(--text-primary)] rounded-tr-sm' 
+              ${msg.sender === 'user'
+                ? 'glass-card text-[var(--text-primary)] rounded-tr-sm'
                 : 'bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] text-white rounded-tl-sm'
               }
             `}>
               <div className={`leading-relaxed ${msg.sender === 'ai' ? 'text-white font-medium' : ''}`}>
                 {msg.text ? formatMessage(msg.text) : <span className={msg.sender === 'user' ? 'text-[var(--text-tertiary)]' : 'text-white/70'}>Loading response...</span>}
               </div>
-              
+
               {/* Function Call Result (kept for functionality, styled to match) */}
               {msg.functionCalled && (
                 <div className={`mt-3 pt-3 border-t ${msg.sender === 'ai' ? 'border-[var(--text-tertiary)]' : 'border-white/20'}`}>
-                  <div className={`flex items-center text-[10px] uppercase tracking-wider mb-1 ${msg.sender === 'ai' ? 'text-[var(--text-secondary)]' : 'text-white/70'}`}>
-                    <Zap className={`h-3 w-3 mr-1 ${msg.sender === 'ai' ? 'text-[var(--accent-warning)]' : 'text-yellow-300'}`} />
+                  <div className="flex items-center text-[10px] uppercase tracking-wider mb-1 text-white/70">
+                    <Zap className="h-3 w-3 mr-1 text-yellow-300" />
                     Action Executed
                   </div>
-                  <div className={`rounded-md p-2 text-xs font-mono ${msg.sender === 'ai' ? 'bg-[var(--card-bg)] text-[var(--text-secondary)]' : 'bg-white/10 text-white/80'}`}>
+                  <div className="rounded-md p-2 text-xs font-mono bg-white/10 text-white/80">
                     {msg.functionCalled}
                     {msg.functionResult && (
-                      <span className={`ml-2 ${msg.sender === 'ai' ? 'text-[var(--text-tertiary)]' : 'text-white/70'}`}>
+                      <span className="ml-2 text-white/70">
                         {msg.functionResult.success ? '✓' : '•'}
                       </span>
                     )}
                   </div>
                 </div>
               )}
-              
+
               {/* Timestamp */}
               <div className={`
                 text-[10px] mt-1 text-right opacity-60
@@ -355,7 +355,7 @@ export default function AIAdvisor() {
             )}
           </div>
         ))}
-        
+
         {/* Typing Indicator */}
         {isTyping && (
           <div className="flex items-start gap-3 justify-start animate-fade-in">

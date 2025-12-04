@@ -74,7 +74,12 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300 flex items-center justify-center">
-        <div className="text-center animate-scale-in"><div className="relative w-16 h-16 mx-auto mb-4"><div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div><div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div></div><p className="text-[var(--text-secondary)] font-medium">Loading...</p></div>
+        <div className="text-center animate-scale-in">
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-[var(--text-tertiary)] border-t-transparent"></div>
+          </div>
+          <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
+        </div>
       </div>
     );
   }

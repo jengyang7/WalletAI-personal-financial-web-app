@@ -11,7 +11,7 @@ interface MonthSelectorProps {
 
 export default function MonthSelector({ selectedMonth, onMonthChange, showAllOption = false }: MonthSelectorProps) {
   const [showModal, setShowModal] = useState(false);
-  
+
   const currentYear = new Date().getFullYear();
   const nextYear = currentYear + 1;
   // Show last 4 years, current year, and next year
@@ -66,12 +66,11 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
     const [year, month] = selectedMonth.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1, 1);
     date.setMonth(date.getMonth() + 1);
-    const nextMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    // Don't go beyond current month
-    const now = new Date();
-    const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    if (nextMonth <= currentMonthStr) {
-      onMonthChange(nextMonth);
+    const nextMonthValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    // Don't go beyond December of next year
+    const maxMonthStr = `${nextYear}-12`;
+    if (nextMonthValue <= maxMonthStr) {
+      onMonthChange(nextMonthValue);
     }
   };
 
@@ -80,6 +79,12 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
     const now = new Date();
     const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     return selectedMonth === currentMonthStr;
+  };
+
+  const isMaxMonth = () => {
+    if (selectedMonth === 'all') return false;
+    const maxMonthStr = `${nextYear}-12`;
+    return selectedMonth === maxMonthStr;
   };
 
   return (
@@ -103,7 +108,7 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
 
         <button
           onClick={handleNextMonth}
-          disabled={isCurrentMonth()}
+          disabled={isMaxMonth()}
           className="p-2 glass-card rounded-xl text-[var(--text-primary)] hover:scale-105 hover:bg-[var(--card-hover)] transition-all duration-300 liquid-button shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           title="Next month"
         >
@@ -112,11 +117,11 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
       </div>
 
       {showModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in"
           onClick={() => setShowModal(false)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
@@ -130,14 +135,31 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
               </button>
             </div>
 
+            {/* Current Month Button */}
+            <button
+              onClick={() => {
+                const now = new Date();
+                const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                onMonthChange(currentMonthStr);
+                setShowModal(false);
+              }}
+              className={`w-full mb-4 p-3 rounded-xl text-left font-medium transition-all duration-300 liquid-button shadow-lg flex items-center ${isCurrentMonth()
+                ? 'bg-[var(--accent-primary)] text-white'
+                : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                }`}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Current Month
+              {isCurrentMonth() && <span className="ml-auto">✓</span>}
+            </button>
+
             {showAllOption && (
               <button
                 onClick={handleAllHistory}
-                className={`w-full mb-4 p-3 rounded-xl text-left font-medium transition-all duration-300 liquid-button shadow-lg ${
-                  selectedMonth === 'all'
-                    ? 'bg-[var(--accent-primary)] text-white'
-                    : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-                }`}
+                className={`w-full mb-4 p-3 rounded-xl text-left font-medium transition-all duration-300 liquid-button shadow-lg ${selectedMonth === 'all'
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                  }`}
               >
                 📅 View All Time
               </button>
@@ -162,19 +184,18 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
                       } else {
                         isFuture = monthDate > now;
                       }
-                      
+
                       return (
                         <button
                           key={month.value}
                           onClick={() => handleMonthSelect(year, month.value)}
                           disabled={isFuture}
-                          className={`p-3 rounded-xl text-sm font-medium transition-all duration-300 liquid-button shadow-lg ${
-                            isSelected
-                              ? 'bg-[var(--accent-primary)] text-white'
-                              : isFuture
+                          className={`p-3 rounded-xl text-sm font-medium transition-all duration-300 liquid-button shadow-lg ${isSelected
+                            ? 'bg-[var(--accent-primary)] text-white'
+                            : isFuture
                               ? 'glass-card text-[var(--text-tertiary)] opacity-40 cursor-not-allowed'
                               : 'glass-card text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:scale-105'
-                          }`}
+                            }`}
                         >
                           {month.label}
                         </button>

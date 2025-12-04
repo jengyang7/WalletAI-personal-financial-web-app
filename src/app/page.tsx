@@ -6,7 +6,7 @@ import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
 import { supabase } from '@/lib/supabase';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { getCurrencyFormatter } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
@@ -43,12 +43,15 @@ export default function Dashboard() {
   const [holdings, setHoldings] = useState<any[]>([]);
   const [spendingPeriod, setSpendingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
-    
+    if (isLoadingRef.current) return;
+
     let mounted = true;
-    
+    isLoadingRef.current = true;
+
     const loadData = async () => {
       try {
         // Load user settings
@@ -87,13 +90,16 @@ export default function Dashboard() {
         if (mounted && !statsError) setMonthlyStats(statsData || []);
       } catch (error) {
         console.error('Error loading data:', error);
+      } finally {
+        isLoadingRef.current = false;
       }
     };
 
     loadData();
-    
+
     return () => {
       mounted = false;
+      isLoadingRef.current = false;
     };
   }, [user?.id]);
 
@@ -164,7 +170,7 @@ export default function Dashboard() {
   // Calculate real financial data for selected month with comparisons
   const financialStats = useMemo(() => {
     const profileCurrency = userSettings?.currency || 'USD';
-    
+
     const totalExpenses = monthExpenses.reduce((sum, exp) => {
       const amountInProfileCurrency = convertCurrency(
         exp.amount,
@@ -173,7 +179,7 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
-    
+
     const totalIncome = monthIncome.reduce((sum, inc) => {
       const amountInProfileCurrency = convertCurrency(
         inc.amount,
@@ -182,7 +188,7 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
-    
+
     const totalAssets = assets.reduce((sum, asset) => {
       const amountInProfileCurrency = convertCurrency(
         asset.amount,
@@ -191,7 +197,7 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
-    
+
     // Include portfolio value in net worth
     const totalPortfolioValue = holdings.reduce((sum, holding) => {
       const currentPrice = holding.current_price || holding.average_price || 0;
@@ -203,7 +209,7 @@ export default function Dashboard() {
       );
       return sum + valueInProfileCurrency;
     }, 0);
-    
+
     // Net worth = Assets + Portfolio Value
     const totalNetWorth = totalAssets + totalPortfolioValue;
 
@@ -218,7 +224,7 @@ export default function Dashboard() {
 
     // Calculate net worth change (placeholder - can be enhanced with historical data)
     const netWorthChange = (incomeChange - expenseChange) / 2;
-    
+
     return {
       income: { amount: totalIncome, change: incomeChange },
       expenses: { amount: totalExpenses, change: expenseChange },
@@ -232,30 +238,30 @@ export default function Dashboard() {
   const spendingByCategory = useMemo(() => {
     const categoryTotals: Record<string, number> = {};
     const profileCurrency = userSettings?.currency || 'USD';
-    
+
     // Filter expenses based on period
-    const relevantExpenses = spendingPeriod === 'monthly' 
-      ? monthExpenses 
+    const relevantExpenses = spendingPeriod === 'monthly'
+      ? monthExpenses
       : expenses.filter(exp => {
-          const expenseYear = new Date(exp.date).getFullYear();
-          const selectedYear = parseInt(selectedMonth.split('-')[0]);
-          return expenseYear === selectedYear;
-        });
-    
+        const expenseYear = new Date(exp.date).getFullYear();
+        const selectedYear = parseInt(selectedMonth.split('-')[0]);
+        return expenseYear === selectedYear;
+      });
+
     relevantExpenses.forEach(exp => {
       // Convert each expense to profile currency
       const expenseInProfileCurrency = convertCurrency(
-        exp.amount, 
-        (exp as any).currency || 'USD', 
+        exp.amount,
+        (exp as any).currency || 'USD',
         profileCurrency
       );
       categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + expenseInProfileCurrency;
     });
 
     const total = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
-    
+
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4'];
-    
+
     return {
       total,
       categories: Object.entries(categoryTotals).map(([name, value], index) => ({
@@ -283,12 +289,12 @@ export default function Dashboard() {
     const profileCurrency = userSettings?.currency || 'USD';
     const data = [];
     const now = new Date();
-    
+
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
-      
+
       const monthTotal = expenses
         .filter(exp => {
           const expDate = new Date(exp.date);
@@ -302,13 +308,13 @@ export default function Dashboard() {
           );
           return sum + amountInProfileCurrency;
         }, 0);
-      
+
       data.push({
         month: monthLabel,
         value: monthTotal
       });
     }
-    
+
     return data;
   }, [expenses, userSettings]);
 
@@ -317,11 +323,11 @@ export default function Dashboard() {
     const profileCurrency = userSettings?.currency || 'USD';
     const data = [];
     const now = new Date();
-    
+
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
-      
+
       const monthExpenses = expenses
         .filter(exp => {
           const expDate = new Date(exp.date);
@@ -335,7 +341,7 @@ export default function Dashboard() {
           );
           return sum + amountInProfileCurrency;
         }, 0);
-      
+
       const monthIncome = income
         .filter(inc => {
           const incDate = new Date(inc.date);
@@ -349,14 +355,14 @@ export default function Dashboard() {
           );
           return sum + amountInProfileCurrency;
         }, 0);
-      
+
       data.push({
         month: monthLabel,
         income: Math.round(monthIncome * 100) / 100,
         expenses: Math.round(monthExpenses * 100) / 100
       });
     }
-    
+
     return data;
   }, [expenses, income, userSettings]);
 
@@ -370,7 +376,7 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
-    
+
     const totalIncome = monthIncome.reduce((sum, inc) => {
       const amountInProfileCurrency = convertCurrency(
         inc.amount,
@@ -379,7 +385,7 @@ export default function Dashboard() {
       );
       return sum + amountInProfileCurrency;
     }, 0);
-    
+
     if (totalIncome === 0) return 0;
     return Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
   }, [monthExpenses, monthIncome, userSettings]);
@@ -396,13 +402,13 @@ export default function Dashboard() {
     const data = [];
     const now = new Date();
     const profileCurrency = userSettings?.currency || 'USD';
-    
+
     // Calculate cumulative values up to each month
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-      
+
       // Calculate cumulative income up to end of this month
       const cumulativeIncome = income
         .filter(inc => {
@@ -412,7 +418,7 @@ export default function Dashboard() {
         .reduce((sum, inc) => {
           return sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency);
         }, 0);
-      
+
       // Calculate cumulative expenses up to end of this month
       const cumulativeExpenses = expenses
         .filter(exp => {
@@ -422,7 +428,7 @@ export default function Dashboard() {
         .reduce((sum, exp) => {
           return sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency);
         }, 0);
-      
+
       // Calculate assets that existed by end of this month
       const monthAssets = assets
         .filter(asset => {
@@ -432,7 +438,7 @@ export default function Dashboard() {
         .reduce((sum, asset) => {
           return sum + convertCurrency(asset.amount, (asset as any).currency || 'USD', profileCurrency);
         }, 0);
-      
+
       // Calculate portfolio value (investments) that existed by end of this month
       const monthPortfolioValue = holdings
         .filter(holding => {
@@ -444,16 +450,16 @@ export default function Dashboard() {
           const valueInHoldingCurrency = holding.shares * currentPrice;
           return sum + convertCurrency(valueInHoldingCurrency, holding.currency || 'USD', profileCurrency);
         }, 0);
-      
+
       // Net worth = Assets + Portfolio Value + (Income - Expenses) up to that point
       const monthNetWorth = monthAssets + monthPortfolioValue + (cumulativeIncome - cumulativeExpenses);
-      
+
       data.push({
         month: monthLabel,
         value: Math.round(monthNetWorth * 100) / 100
       });
     }
-    
+
     return data;
   }, [assets, holdings, income, expenses, userSettings]);
 
@@ -465,7 +471,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Dashboard</h1>
           <p className="text-[var(--text-secondary)]">Welcome back, {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}</p>
         </div>
-        
+
         {/* Month Selector */}
         <MonthSelector
           selectedMonth={selectedMonth}
@@ -477,7 +483,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link href="/income" className="glass-card rounded-2xl p-6 cursor-pointer group animate-scale-in">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[var(--text-secondary)] text-base font-semibold">Income</h3>
+            <h3 className="text-[var(--text-secondary)] text-lg font-semibold">Income</h3>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
               <DollarSign className="h-5 w-5 text-white" />
             </div>
@@ -505,7 +511,7 @@ export default function Dashboard() {
 
         <Link href="/expenses" className="glass-card rounded-2xl p-6 cursor-pointer group animate-scale-in" style={{ animationDelay: '100ms' }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[var(--text-secondary)] text-base font-semibold">Expenses</h3>
+            <h3 className="text-[var(--text-secondary)] text-lg font-semibold">Expenses</h3>
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
               <CreditCard className="h-5 w-5 text-white" />
             </div>
@@ -533,7 +539,7 @@ export default function Dashboard() {
 
         <Link href="/assets" className="rounded-2xl p-6 cursor-pointer group animate-scale-in bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white text-base font-semibold">Net Worth</h3>
+            <h3 className="text-white text-lg font-semibold">Net Worth</h3>
             <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
               <Wallet className="h-5 w-5 text-white" />
             </div>
@@ -568,27 +574,27 @@ export default function Dashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlySpendingData}>
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   stroke="#94a3b8"
                   style={{ fontSize: '12px' }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#94a3b8"
                   style={{ fontSize: '12px' }}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #334155',
                     borderRadius: '8px'
                   }}
                   labelStyle={{ color: '#f1f5f9' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3b82f6" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   dot={{ fill: '#3b82f6', r: 4 }}
                   activeDot={{ r: 6 }}
@@ -603,29 +609,27 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-[var(--text-primary)]">Spending by Category</h3>
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => setSpendingPeriod('monthly')}
-                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${
-                  spendingPeriod === 'monthly' 
-                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg' 
-                    : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
-                }`}
+                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${spendingPeriod === 'monthly'
+                  ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg'
+                  : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
+                  }`}
               >
                 Monthly
               </button>
-              <button 
+              <button
                 onClick={() => setSpendingPeriod('yearly')}
-                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${
-                  spendingPeriod === 'yearly' 
-                    ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg' 
-                    : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
-                }`}
+                className={`px-3 py-1.5 text-sm rounded-xl transition-all duration-300 font-medium liquid-button ${spendingPeriod === 'yearly'
+                  ? 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-white shadow-lg'
+                  : 'bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)]'
+                  }`}
               >
                 Yearly
               </button>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div className="w-48 h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -668,25 +672,25 @@ export default function Dashboard() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            
+
             <div className="flex-1 ml-8">
               {spendingByCategory.categories.length === 0 ? (
                 <p className="text-[var(--text-secondary)] text-sm">No expenses yet. Add some expenses to see your spending breakdown.</p>
               ) : (
                 spendingByCategory.categories.map((item, index) => (
-                <div key={item.name} className="flex items-center justify-between mb-3 p-2 rounded-lg hover:bg-[var(--card-hover)] transition-all duration-300 animate-slide-in-right" style={{ animationDelay: `${index * 50}ms` }}>
-                  <div className="flex items-center">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-3 shadow-lg" 
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="text-[var(--text-primary)] text-sm font-medium">{item.name}</span>
+                  <div key={item.name} className="flex items-center justify-between mb-3 p-2 rounded-lg hover:bg-[var(--card-hover)] transition-all duration-300 animate-slide-in-right" style={{ animationDelay: `${index * 50}ms` }}>
+                    <div className="flex items-center">
+                      <div
+                        className="w-3 h-3 rounded-full mr-3 shadow-lg"
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="text-[var(--text-primary)] text-sm font-medium">{item.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[var(--text-primary)] font-semibold">{formatCurrency(item.value)}</div>
+                      <div className="text-[var(--text-tertiary)] text-xs">({item.percentage}%)</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-[var(--text-primary)] font-semibold">{formatCurrency(item.value)}</div>
-                    <div className="text-[var(--text-tertiary)] text-xs">({item.percentage}%)</div>
-                  </div>
-                </div>
                 ))
               )}
             </div>
@@ -700,19 +704,19 @@ export default function Dashboard() {
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={cashflowData}>
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 stroke="#94a3b8"
                 style={{ fontSize: '12px' }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#94a3b8"
                 style={{ fontSize: '12px' }}
                 tickFormatter={(value) => formatCurrency(value)}
               />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1e293b', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1e293b',
                   border: '1px solid #334155',
                   borderRadius: '8px'
                 }}
@@ -791,19 +795,19 @@ export default function Dashboard() {
         <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '700ms' }}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h3>
-            <Link 
+            <Link
               href="/expenses"
               className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm transition-colors font-medium"
             >
               Manage
             </Link>
           </div>
-          
+
           {subscriptions.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-3" />
               <p className="text-[var(--text-secondary)] text-sm">No subscriptions yet</p>
-              <Link 
+              <Link
                 href="/expenses"
                 className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm mt-2 inline-block font-medium"
               >
@@ -820,15 +824,14 @@ export default function Dashboard() {
                     (new Date(sub.next_billing_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
                   );
                   const isUpcoming = daysUntilBilling <= 7 && daysUntilBilling >= 0;
-                  
+
                   return (
                     <div
                       key={sub.id}
-                      className={`p-3 rounded-xl transition-all duration-300 hover:scale-102 animate-slide-in-right ${
-                        isUpcoming 
-                          ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-[var(--accent-warning)]' 
-                          : 'bg-[var(--card-bg)] border border-[var(--card-border)]'
-                      }`}
+                      className={`p-3 rounded-xl transition-all duration-300 hover:scale-102 animate-slide-in-right ${isUpcoming
+                        ? 'bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-[var(--accent-warning)]'
+                        : 'bg-[var(--card-bg)] border border-[var(--card-border)]'
+                        }`}
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div className="flex items-center justify-between">
@@ -845,9 +848,9 @@ export default function Dashboard() {
                             </span>
                           ) : (
                             <span className="text-[var(--text-tertiary)] text-xs">
-                              {new Date(sub.next_billing_date).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric' 
+                              {new Date(sub.next_billing_date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric'
                               })}
                             </span>
                           )}
@@ -857,7 +860,7 @@ export default function Dashboard() {
                   );
                 })}
               {subscriptions.filter(sub => sub.is_active).length > 8 && (
-                <Link 
+                <Link
                   href="/expenses"
                   className="block text-center text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm py-2 font-medium"
                 >
@@ -874,29 +877,29 @@ export default function Dashboard() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={netWorthTrend}>
-                <XAxis 
-                  dataKey="month" 
+                <XAxis
+                  dataKey="month"
                   stroke="#94a3b8"
                   style={{ fontSize: '12px' }}
                 />
-                <YAxis 
+                <YAxis
                   stroke="#94a3b8"
                   style={{ fontSize: '12px' }}
                   tickFormatter={(value) => formatCurrency(value)}
                 />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1e293b', 
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1e293b',
                     border: '1px solid #334155',
                     borderRadius: '8px'
                   }}
                   labelStyle={{ color: '#f1f5f9' }}
                   formatter={(value: any) => [formatCurrency(value), 'Net Worth']}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#3B82F6" 
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#3B82F6"
                   strokeWidth={2}
                   dot={{ fill: '#3B82F6', r: 4 }}
                   activeDot={{ r: 6 }}

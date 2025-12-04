@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  PiggyBank, 
-  Target, 
-  TrendingUp, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Receipt,
+  PiggyBank,
+  Target,
+  TrendingUp,
+  Settings,
   LogOut,
   CreditCard,
   Wallet,
@@ -62,7 +62,7 @@ export default function Sidebar() {
           {navigation.map((item, index) => {
             const isActive = pathname === item.href;
             return (
-              <li 
+              <li
                 key={item.name}
                 style={{ animationDelay: `${index * 50}ms` }}
                 className="animate-slide-in-right"
@@ -110,20 +110,20 @@ export default function Sidebar() {
             <div className="text-xs text-[var(--text-secondary)] truncate">{user?.email}</div>
           </div>
         </div>
-        
+
         <div className="space-y-1">
           <Link
             href="/settings"
-            className="flex items-center rounded-xl px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all duration-300 hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] border border-transparent hover:border-[var(--glass-border)]"
+            className="group flex items-center rounded-2xl px-4 py-3 text-sm font-medium sidebar-nav-hover text-[var(--text-secondary)]"
           >
-            <Settings className="mr-3 h-4 w-4" />
+            <Settings className="mr-3 h-4 w-4 text-[var(--text-tertiary)] group-hover:text-white" />
             Settings
           </Link>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center rounded-xl px-3 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all duration-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-[var(--accent-error)] border border-transparent hover:border-red-200 dark:hover:border-red-900/50"
+            className="group w-full flex items-center rounded-2xl px-4 py-3 text-sm font-medium sidebar-nav-hover text-[var(--text-secondary)]"
           >
-            <LogOut className="mr-3 h-4 w-4" />
+            <LogOut className="mr-3 h-4 w-4 text-[var(--text-tertiary)] group-hover:text-white" />
             Logout
           </button>
         </div>

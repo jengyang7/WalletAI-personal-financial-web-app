@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Wallet, Edit2, Trash2, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/lib/supabase';
@@ -55,12 +55,15 @@ export default function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [deletingAsset, setDeletingAsset] = useState<string | null>(null);
   const [showCustomType, setShowCustomType] = useState(false);
+  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (!user?.id) return;
-    
+    if (isLoadingRef.current) return;
+
     let mounted = true;
-    
+    isLoadingRef.current = true;
+
     const loadData = async () => {
       try {
         // Load settings
@@ -91,13 +94,15 @@ export default function AssetsPage() {
         console.error('Error loading data:', error);
       } finally {
         if (mounted) setLoading(false);
+        isLoadingRef.current = false;
       }
     };
 
     loadData();
-    
+
     return () => {
       mounted = false;
+      isLoadingRef.current = false;
     };
   }, [user?.id]);
 
@@ -120,7 +125,7 @@ export default function AssetsPage() {
   const handleAddAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     const assetType = showCustomType ? newAsset.customType : newAsset.type;
-    
+
     if (newAsset.name && assetType && newAsset.amount) {
       try {
         const { data, error } = await supabase
@@ -157,7 +162,7 @@ export default function AssetsPage() {
 
   const handleDeleteAsset = async (assetId: string) => {
     if (!confirm('Are you sure you want to delete this asset?')) return;
-    
+
     setDeletingAsset(assetId);
     try {
       const { error } = await supabase
@@ -166,7 +171,7 @@ export default function AssetsPage() {
         .eq('id', assetId);
 
       if (error) throw error;
-      
+
       setAssets(assets.filter(asset => asset.id !== assetId));
     } catch (error) {
       console.error('Error deleting asset:', error);
@@ -192,7 +197,7 @@ export default function AssetsPage() {
         .eq('id', editingAsset.id);
 
       if (error) throw error;
-      
+
       setAssets(assets.map(asset => asset.id === editingAsset.id ? editingAsset : asset));
       setEditingAsset(null);
     } catch (error) {
@@ -222,7 +227,7 @@ export default function AssetsPage() {
   // Calculate assets by type for pie chart
   const assetsByType = useMemo(() => {
     const typeTotals: Record<string, number> = {};
-    
+
     assets.forEach(asset => {
       const valueInProfileCurrency = convertCurrency(
         asset.amount,
@@ -234,7 +239,7 @@ export default function AssetsPage() {
 
     const total = Object.values(typeTotals).reduce((sum, val) => sum + val, 0);
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6'];
-    
+
     return {
       total,
       types: Object.entries(typeTotals).map(([name, value], index) => ({
@@ -262,8 +267,7 @@ export default function AssetsPage() {
       <div className="p-6 bg-[var(--background)] min-h-screen flex items-center justify-center transition-colors duration-300">
         <div className="text-center animate-scale-in">
           <div className="relative w-16 h-16 mx-auto mb-4">
-            <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] rounded-full blur-xl opacity-50 animate-pulse"></div>
-            <div className="relative spinner rounded-full h-16 w-16 border-4 border-transparent border-t-[var(--accent-primary)] border-r-[var(--accent-success)]"></div>
+            <div className="relative spinner rounded-full h-16 w-16 border-4 border-[var(--text-tertiary)] border-t-transparent"></div>
           </div>
           <p className="text-[var(--text-secondary)] font-medium">Loading...</p>
         </div>
@@ -299,7 +303,7 @@ export default function AssetsPage() {
           {/* Add New Asset Form */}
           <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '100ms' }}>
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Asset</h2>
-            
+
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -407,7 +411,7 @@ export default function AssetsPage() {
                   onChange={(e) => setNewAsset({ ...newAsset, currency: e.target.value } as any)}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
-                  {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                  {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -438,8 +442,8 @@ export default function AssetsPage() {
                   <p className="text-2xl font-bold text-[var(--text-primary)]">
                     {formatCurrency(totalPortfolioValue)}
                   </p>
-                  <a 
-                    href="/investments" 
+                  <a
+                    href="/investments"
                     className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm mt-1 inline-block font-medium transition-colors"
                   >
                     View Details →
@@ -451,7 +455,7 @@ export default function AssetsPage() {
 
           <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Your Assets</h2>
-            
+
             {assets.length === 0 ? (
               <div className="text-center py-12">
                 <Wallet className="h-12 w-12 text-[var(--text-tertiary)] mx-auto mb-4" />
@@ -466,7 +470,7 @@ export default function AssetsPage() {
                     return sum + valueInProfileCurrency;
                   }, 0);
                   const gradientClass = assetTypeColors[type] || assetTypeColors['Other'];
-                  
+
                   return (
                     <div key={type}>
                       {/* Type Header */}
@@ -476,7 +480,7 @@ export default function AssetsPage() {
                           {formatCurrency(typeTotal)}
                         </span>
                       </div>
-                      
+
                       {/* Assets for this type */}
                       <div className="space-y-2">
                         {typeAssets.map((asset) => (
@@ -528,16 +532,16 @@ export default function AssetsPage() {
 
       {/* Edit Asset Modal */}
       {editingAsset && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in"
           onClick={() => setEditingAsset(null)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Asset</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Asset Name</label>
@@ -590,7 +594,7 @@ export default function AssetsPage() {
                   onChange={(e) => setEditingAsset({ ...(editingAsset as any), currency: e.target.value } as any)}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
-                  {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                  {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
