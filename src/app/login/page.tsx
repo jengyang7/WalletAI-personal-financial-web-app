@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { CreditCard, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { CreditCard, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -23,11 +23,11 @@ export default function Login() {
 
     try {
       await signIn(email, password);
-      router.push('/');
+      router.push('/dashboard');
     } catch (error: any) {
       // Handle specific Supabase auth errors
       let errorMessage = 'Failed to sign in';
-      
+
       if (error.message?.includes('Invalid login credentials')) {
         errorMessage = 'Invalid email or password. Please check your credentials and try again.';
       } else if (error.message?.includes('Email not confirmed')) {
@@ -37,7 +37,7 @@ export default function Login() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
       setLoading(false); // Stop loading on error
     }
@@ -48,7 +48,7 @@ export default function Login() {
       {/* Background Effects */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[var(--accent-primary)]/20 to-[var(--accent-success)]/20 rounded-full blur-3xl animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      
+
       <div className="w-full max-w-md relative z-10 animate-scale-in">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -67,7 +67,7 @@ export default function Login() {
         {/* Login Form */}
         <div className="glass-card rounded-2xl p-8 shadow-2xl">
           <h2 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Welcome Back</h2>
-          
+
           {error && (
             <div className="bg-[var(--accent-error)]/10 border border-[var(--accent-error)]/30 rounded-xl p-3 mb-6 animate-slide-in-up">
               <p className="text-[var(--accent-error)] text-sm">{error}</p>
@@ -118,6 +118,16 @@ export default function Login() {
               </div>
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-medium transition-colors"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -135,6 +145,17 @@ export default function Login() {
               </Link>
             </p>
           </div>
+        </div>
+
+        {/* Back to Home Link */}
+        <div className="mt-6 text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Home
+          </Link>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import AIAdvisor from '@/components/AIAdvisor';
 import { FinanceProvider } from '@/context/FinanceContext';
 
-const publicRoutes = ['/login', '/signup', '/verify-email'];
+const publicRoutes = ['/', '/login', '/signup', '/verify-email', '/forgot-password', '/reset-password'];
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,12 +25,12 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       if (!user && !isPublicRoute) {
         // Redirect to login if not authenticated and not on public route
         router.push('/login');
-      } else if (user && isPublicRoute) {
-        // Redirect to dashboard if authenticated and on public route
-        router.push('/');
+      } else if (user && (pathname === '/login' || pathname === '/signup')) {
+        // Only redirect to dashboard from login/signup pages when authenticated
+        router.push('/dashboard');
       }
     }
-  }, [user, loading, isPublicRoute, router]);
+  }, [user, loading, isPublicRoute, pathname, router]);
 
   // Handle dragging to resize the assistant panel
   useEffect(() => {

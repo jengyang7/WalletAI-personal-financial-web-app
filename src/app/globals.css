@@ -119,7 +119,26 @@ body {
 .glass-card:hover {
   background: var(--card-hover);
   box-shadow: 0 8px 32px 0 var(--glass-shadow);
+}
+
+/* Only apply hover transform to clickable glass cards */
+.glass-card.cursor-pointer:hover {
   transform: translateY(-2px);
+}
+
+/* Static glass cards that never move on hover */
+.glass-card-static {
+  background: var(--card-bg);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 24px 0 var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-static:hover {
+  background: var(--card-hover);
+  box-shadow: 0 8px 32px 0 var(--glass-shadow);
 }
 
 .glass-sidebar {

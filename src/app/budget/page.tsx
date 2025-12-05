@@ -13,7 +13,7 @@ import { useMonth } from '@/context/MonthContext';
 
 const getBudgetIcon = (iconType: string) => {
   const lowerType = iconType.toLowerCase();
-  
+
   if (lowerType.includes('food') || lowerType.includes('dining')) {
     return Utensils;
   } else if (lowerType.includes('groceries')) {
@@ -110,8 +110,8 @@ export default function Budget() {
 
         if (error) throw error;
 
-        setNewBudget({ 
-          category: availableCategories[0] || '', 
+        setNewBudget({
+          category: availableCategories[0] || '',
           allocated_amount: '',
           currency: userSettings?.currency || 'USD'
         });
@@ -171,128 +171,129 @@ export default function Budget() {
   return (
     <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex animate-slide-in-up flex-col lg:flex-row lg:items-center lg:justify-between gap-4 animate-slide-in-up">
+      <div className="mb-4 flex animate-slide-in-up flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Budgets</h1>
           <p className="text-[var(--text-secondary)]">Manage your spending with personalized budgets.</p>
         </div>
-        <div className="flex justify-end">
-          <MonthSelector
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
-            showAllOption
-          />
-        </div>
+        <MonthSelector
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          showAllOption
+        />
+      </div>
+
+      {/* Add Button Row */}
+      <div className="mb-8 flex justify-end animate-slide-in-up">
+        <button
+          onClick={() => setShowAddBudget(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Budget
+        </button>
       </div>
 
 
       <div className="space-y-4">
-          {budgets.length === 0 ? (
-            <div className="glass-card rounded-2xl p-12 text-center">
-              <p className="text-[var(--text-secondary)]">No budgets set yet. Add a budget to start tracking your spending!</p>
-            </div>
-          ) : (
-            budgets.map((budget, index) => {
-              const IconComponent = getBudgetIcon(budget.category.toLowerCase());
-              const budgetCurrency = normalizeCurrencyCode(budget.currency);
-              
-              // Filter expenses for the selected month and this category
-              // AND convert all expenses to the budget's currency
-              const monthSpent = expenses
-                .filter((e) => {
-                  const d = new Date(e.date);
-                  const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  return ym === selectedMonth && e.category === budget.category;
-                })
-                .reduce((sum, e) => {
-                  // Convert expense amount to budget currency
-                  const expenseCurrency = normalizeCurrencyCode(e.currency);
-                  const convertedAmount = convertCurrency(e.amount, expenseCurrency, budgetCurrency);
-                  return sum + convertedAmount;
-                }, 0);
-              
-              const percentage = budget.allocated_amount > 0 ? Math.round((monthSpent / budget.allocated_amount) * 100) : 0;
-              const remaining = budget.allocated_amount - monthSpent;
-              
-              return (
-                <div
-                  key={budget.id}
-                  onClick={() => setEditingBudget(budget)}
-                  className="glass-card rounded-2xl p-6 hover:bg-[var(--card-hover)] hover:scale-102 transition-all duration-300 cursor-pointer animate-scale-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center flex-1">
-                      <div className="p-3 bg-blue-500/20 rounded-lg mr-4">
-                        <IconComponent className="h-6 w-6 text-blue-400" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-[var(--text-primary)]">{budget.category}</h3>
-                        <p className="text-[var(--text-secondary)] text-sm">
-                          Remaining: {formatBy(budgetCurrency)(remaining)}
-                        </p>
-                      </div>
+        {budgets.length === 0 ? (
+          <div className="glass-card rounded-2xl p-12 text-center">
+            <p className="text-[var(--text-secondary)]">No budgets set yet. Add a budget to start tracking your spending!</p>
+          </div>
+        ) : (
+          budgets.map((budget, index) => {
+            const IconComponent = getBudgetIcon(budget.category.toLowerCase());
+            const budgetCurrency = normalizeCurrencyCode(budget.currency);
+
+            // Filter expenses for the selected month and this category
+            // AND convert all expenses to the budget's currency
+            const monthSpent = expenses
+              .filter((e) => {
+                const d = new Date(e.date);
+                const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                return ym === selectedMonth && e.category === budget.category;
+              })
+              .reduce((sum, e) => {
+                // Convert expense amount to budget currency
+                const expenseCurrency = normalizeCurrencyCode(e.currency);
+                const convertedAmount = convertCurrency(e.amount, expenseCurrency, budgetCurrency);
+                return sum + convertedAmount;
+              }, 0);
+
+            const percentage = budget.allocated_amount > 0 ? Math.round((monthSpent / budget.allocated_amount) * 100) : 0;
+            const remaining = budget.allocated_amount - monthSpent;
+
+            return (
+              <div
+                key={budget.id}
+                onClick={() => setEditingBudget(budget)}
+                className="glass-card rounded-2xl p-6 hover:bg-[var(--card-hover)] hover:scale-102 transition-all duration-300 cursor-pointer animate-scale-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center flex-1">
+                    <div className="p-3 bg-blue-500/20 rounded-lg mr-4">
+                      <IconComponent className="h-6 w-6 text-blue-400" />
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-[var(--text-primary)]">{percentage}%</div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteBudget(budget.id);
-                          }}
-                          disabled={deletingBudget === budget.id}
-                          className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                          title="Delete budget"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-[var(--text-primary)]">{budget.category}</h3>
+                      <p className="text-[var(--text-secondary)] text-sm">
+                        Remaining: {formatBy(budgetCurrency)(remaining)}
+                      </p>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-[var(--text-primary)]">{percentage}%</div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteBudget(budget.id);
+                        }}
+                        disabled={deletingBudget === budget.id}
+                        className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                        title="Delete budget"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Progress Bar */}
-                  <div className="mb-4">
+                {/* Progress Bar */}
+                <div className="mb-4">
                   <div className="flex justify-between text-sm text-[var(--text-secondary)] mb-2">
                     <span>{formatBy(budgetCurrency)(monthSpent)} spent</span>
                     <span>{formatBy(budgetCurrency)(budget.allocated_amount)} budget</span>
                   </div>
-                    <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(percentage)}`}
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
-                      ></div>
-                    </div>
+                  <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(percentage)}`}
+                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                    ></div>
                   </div>
                 </div>
-              );
-            })
-          )}
+              </div>
+            );
+          })
+        )}
 
-        {/* Add New Budget Button */}
-        <button
-          onClick={() => setShowAddBudget(true)}
-          className="w-full glass-card border-2 border-dashed border-[var(--card-border)] rounded-2xl p-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all duration-300 flex items-center justify-center shadow-sm"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Add New Budget
-        </button>
       </div>
 
       {/* Add Budget Modal */}
       {showAddBudget && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setShowAddBudget(false)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Add New Budget</h3>
-            
+
             <form onSubmit={handleAddBudget} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -342,7 +343,7 @@ export default function Budget() {
                   onChange={(e) => setNewBudget({ ...newBudget, currency: e.target.value })}
                   className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                  {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -370,16 +371,16 @@ export default function Budget() {
 
       {/* Edit Budget Modal */}
       {editingBudget && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setEditingBudget(null)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Budget</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Category</label>
@@ -413,7 +414,7 @@ export default function Budget() {
                   onChange={(e) => setEditingBudget({ ...editingBudget, currency: e.target.value })}
                   className="w-full glass-card border border-[var(--card-border)] rounded-lg px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                  {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>

@@ -149,7 +149,7 @@ export default function MonthSelector({ selectedMonth, onMonthChange, showAllOpt
                 }`}
             >
               <Calendar className="h-4 w-4 mr-2" />
-              Current Month
+              This Month
               {isCurrentMonth() && <span className="ml-auto">✓</span>}
             </button>
 

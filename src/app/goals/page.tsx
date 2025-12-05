@@ -230,130 +230,127 @@ export default function Goals() {
       </div>
 
       <div>
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 glass-card border border-[var(--card-border)] p-1 rounded-2xl mb-6 w-fit shadow-sm">
+        {/* Tab Navigation */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex space-x-1 glass-card border border-[var(--card-border)] p-1 rounded-2xl w-fit shadow-sm">
             {['Active Goals', 'Completed Goals'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'bg-[var(--accent-primary)] text-white shadow'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab
+                  ? 'bg-[var(--accent-primary)] text-white shadow'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                  }`}
               >
                 {tab}
               </button>
             ))}
           </div>
+          {activeTab === 'Active Goals' && (
+            <button
+              onClick={() => setShowAddGoal(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Goal
+            </button>
+          )}
+        </div>
 
-          {/* Goals Grid */}
-          <div className="space-y-6">
-              {displayedGoals.map((goal) => {
-              const IconComponent = getCategoryIcon(goal.category);
-              const progressPercentage = getProgressPercentage(goal.current_amount, goal.target_amount);
-              
-              return (
-                <div
-                  key={goal.id}
-                  onClick={() => setEditingGoal(goal)}
-                  className="glass-card rounded-2xl overflow-hidden border border-[var(--card-border)] shadow-md cursor-pointer hover:bg-[var(--card-hover)] transition-all duration-300"
-                >
-                  <div className="flex">
-                    {/* Goal Image */}
-                    <div className="w-48 h-48 relative bg-[var(--card-border)]/30 flex items-center justify-center">
-                      <IconComponent className="h-16 w-16 text-[var(--accent-primary)]" />
-                    </div>
-                    
-                    {/* Goal Details */}
-                    <div className="flex-1 p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1 mr-4">
-                          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{goal.title}</h3>
-                          <p className="text-[var(--text-secondary)] text-sm mb-4">{goal.description}</p>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          goal.is_completed 
-                            ? 'bg-green-500/20 text-[var(--accent-success)]' 
-                            : 'bg-blue-500/20 text-[var(--accent-primary)]'
+        {/* Goals Grid */}
+        <div className="space-y-6">
+          {displayedGoals.map((goal) => {
+            const IconComponent = getCategoryIcon(goal.category);
+            const progressPercentage = getProgressPercentage(goal.current_amount, goal.target_amount);
+
+            return (
+              <div
+                key={goal.id}
+                onClick={() => setEditingGoal(goal)}
+                className="glass-card rounded-2xl overflow-hidden border border-[var(--card-border)] shadow-md cursor-pointer hover:bg-[var(--card-hover)] transition-all duration-300"
+              >
+                <div className="flex">
+                  {/* Goal Image */}
+                  <div className="w-48 h-48 relative bg-[var(--card-border)]/30 flex items-center justify-center">
+                    <IconComponent className="h-16 w-16 text-[var(--accent-primary)]" />
+                  </div>
+
+                  {/* Goal Details */}
+                  <div className="flex-1 p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1 mr-4">
+                        <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{goal.title}</h3>
+                        <p className="text-[var(--text-secondary)] text-sm mb-4">{goal.description}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${goal.is_completed
+                        ? 'bg-green-500/20 text-[var(--accent-success)]'
+                        : 'bg-blue-500/20 text-[var(--accent-primary)]'
                         }`}>
-                          {goal.category}
+                        {goal.category}
+                      </span>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-[var(--text-secondary)]">Progress</span>
+                        <span className="text-sm text-[var(--text-primary)] font-medium">
+                          {getCurrencyFormatter(goal.currency || profileCurrency)(Number(goal.current_amount || 0))} / {getCurrencyFormatter(goal.currency || profileCurrency)(Number(goal.target_amount || 0))}
                         </span>
                       </div>
-
-                      {/* Progress */}
-                      <div className="mb-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-[var(--text-secondary)]">Progress</span>
-                          <span className="text-sm text-[var(--text-primary)] font-medium">
-                            {getCurrencyFormatter(goal.currency || profileCurrency)(Number(goal.current_amount || 0))} / {getCurrencyFormatter(goal.currency || profileCurrency)(Number(goal.target_amount || 0))}
-                          </span>
-                        </div>
-                        <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              goal.is_completed
-                                ? 'bg-[var(--accent-success)]'
-                                : 'bg-[var(--accent-primary)]'
+                      <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all duration-300 ${goal.is_completed
+                            ? 'bg-[var(--accent-success)]'
+                            : 'bg-[var(--accent-primary)]'
                             }`}
-                            style={{ width: `${progressPercentage}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-xs text-[var(--text-secondary)]">
-                            {progressPercentage.toFixed(1)}% complete
-                          </span>
-                          <span className="text-xs text-[var(--text-secondary)]">
-                            Target: {formatDate(goal.target_date)}
-                          </span>
-                        </div>
+                          style={{ width: `${progressPercentage}%` }}
+                        ></div>
                       </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-[var(--text-secondary)]">
+                          {progressPercentage.toFixed(1)}% complete
+                        </span>
+                        <span className="text-xs text-[var(--text-secondary)]">
+                          Target: {formatDate(goal.target_date)}
+                        </span>
+                      </div>
+                    </div>
 
-                      {/* Action Button */}
-                        <div className="flex items-center justify-end mt-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteGoal(goal.id);
-                            }}
-                            disabled={deletingGoal === goal.id}
-                            className="inline-flex items-center text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </button>
-                        </div>
+                    {/* Action Button */}
+                    <div className="flex items-center justify-end mt-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteGoal(goal.id);
+                        }}
+                        disabled={deletingGoal === goal.id}
+                        className="inline-flex items-center text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
-              );
-            })}
-
-            {/* Add New Goal Button */}
-            {activeTab === 'Active Goals' && (
-              <button
-                onClick={() => setShowAddGoal(true)}
-                className="w-full glass-card border-2 border-dashed border-[var(--card-border)] rounded-2xl p-8 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all duration-300 flex flex-col items-center justify-center shadow-sm"
-              >
-                <Plus className="h-8 w-8 mb-2" />
-                <span className="text-lg font-medium">Add New Goal</span>
-              </button>
-            )}
-          </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Add Goal Modal */}
       {showAddGoal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setShowAddGoal(false)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Add New Goal</h3>
-            
+
             <form onSubmit={handleAddGoal} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -427,7 +424,7 @@ export default function Goals() {
                   onChange={(e) => setNewGoal({ ...newGoal, currency: e.target.value })}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                  {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -485,16 +482,16 @@ export default function Goals() {
 
       {/* Edit Goal Modal */}
       {editingGoal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-md animate-fade-in flex items-center justify-center z-50 p-4"
           onClick={() => setEditingGoal(null)}
         >
-          <div 
+          <div
             className="glass-card rounded-2xl p-6 w-full max-w-md shadow-2xl animate-scale-in"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Edit Goal</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">

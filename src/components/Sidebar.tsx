@@ -20,7 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Assets', href: '/assets', icon: Wallet },
   { name: 'Income', href: '/income', icon: DollarSign },
   { name: 'Expenses', href: '/expenses', icon: Receipt },
