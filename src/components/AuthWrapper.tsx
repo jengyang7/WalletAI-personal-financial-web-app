@@ -102,9 +102,8 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
           </main>
           {/* Drag handle between main content and FinAI assistant */}
           <div
-            className={`w-1 cursor-col-resize bg-[var(--background)] border-l border-[var(--glass-border)] hover:bg-[var(--card-hover)] transition-colors select-none ${
-              isResizing ? 'bg-[var(--card-hover)]' : ''
-            }`}
+            className={`w-1 cursor-col-resize bg-[var(--background)] border-l border-[var(--glass-border)] hover:bg-[var(--card-hover)] transition-colors select-none ${isResizing ? 'bg-[var(--card-hover)]' : ''
+              }`}
             onMouseDown={handleResizeMouseDown}
           />
           <div className="shrink-0" style={{ width: assistantWidth }}>

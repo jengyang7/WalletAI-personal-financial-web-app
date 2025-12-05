@@ -174,7 +174,7 @@ export default function Settings() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center"
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 disabled:cursor-not-allowed text-[var(--text-primary)] font-medium py-2 px-6 rounded-lg transition-colors flex items-center"
           >
             <Save className="h-4 w-4 mr-2" />
             {saving ? 'Saving...' : 'Save Changes'}

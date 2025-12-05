@@ -90,7 +90,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       // Calculate spent amounts
       const budgetsWithCalculations = await Promise.all(
         (data || []).map(async (budget) => {
@@ -152,7 +152,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       // Add to local state
       setExpenses(prev => [data, ...prev]);
-      
+
       // Reload budgets to update spent amounts
       loadBudgets();
     } catch (error) {

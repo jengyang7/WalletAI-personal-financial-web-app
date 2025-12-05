@@ -24,14 +24,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) {
         console.error('Error getting session:', error);
       } else {
         setSession(session);
         setUser(session?.user ?? null);
       }
-      
+
       setLoading(false);
     };
 
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     if (error) throw error;
-    
+
     // Return the result so we can handle it in the component
     return data;
   };

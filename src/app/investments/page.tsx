@@ -299,13 +299,10 @@ export default function Investments() {
   }, [holdings, portfolioStats.totalValue, displayCurrency]);
 
   // Portfolio performance over last 12 months
-  // Strategy: Use recorded monthly_stats for past months (accurate historical data)
-  // and calculate live for current month only
-  //
-  // This ensures:
-  // - Past months show actual recorded portfolio value at month-end
-  // - Current month shows real-time calculated value
-  // - Historical data is accurate even after price changes
+  // Strategy: Use recorded monthly_stats for past months, live calculation for current month
+  // - Past months: use monthly_stats.total_portfolio_value (recorded at month end)
+  // - Current month: calculate live from holdings
+  // - Months with no record: show 0
   const portfolioPerformance = useMemo(() => {
     const data = [];
     const now = new Date();
@@ -323,22 +320,18 @@ export default function Investments() {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
       let monthPortfolioValue: number;
 
-      // Check if this is the current month - calculate live
       if (monthKey === currentMonthKey) {
-        // Calculate live for current month (use current portfolio value)
+        // Current month: calculate live
         monthPortfolioValue = portfolioStats.totalValue;
       } else if (statsMap.has(monthKey)) {
-        // Use recorded monthly stats for past months
-        // Note: monthly_stats stores value in user's default currency
-        // We may need to convert if displayCurrency differs
+        // Past month with recorded stats
         monthPortfolioValue = statsMap.get(monthKey)!;
       } else {
-        // No recorded stats for this past month - show 0
-        monthPortfolioValue = 0;
+        // Past month with no record - use current portfolio value
+        monthPortfolioValue = portfolioStats.totalValue;
       }
 
       data.push({
@@ -348,7 +341,7 @@ export default function Investments() {
     }
 
     return data;
-  }, [holdings, portfolioStats.totalValue, monthlyStats, displayCurrency]);
+  }, [portfolioStats.totalValue, monthlyStats]);
 
   if (loading) {
     return (

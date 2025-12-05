@@ -213,26 +213,72 @@ export default function Dashboard() {
     // Determine if selected month is current month
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const [year, month] = selectedMonth.split('-').map(Number);
     const isCurrentMonth = selectedMonth === currentMonthKey;
 
-    // Check if we have recorded stats for the selected month
-    const selectedMonthStats = monthlyStats.find(stat => {
-      const statDate = new Date(stat.month);
-      const statKey = `${statDate.getFullYear()}-${String(statDate.getMonth() + 1).padStart(2, '0')}`;
-      return statKey === selectedMonth;
-    });
+    // Check if user has any transactions for the selected month
+    const hasTransactionsForMonth = monthExpenses.length > 0 || monthIncome.length > 0;
+
+    // Helper to get month balance
+    const getMonthBalance = (monthKey: string) => {
+      const mIncome = income
+        .filter(inc => {
+          const incDate = new Date(inc.date);
+          return `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
+        })
+        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency), 0);
+
+      const mExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          return `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
+        })
+        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency), 0);
+
+      return mIncome - mExpenses;
+    };
 
     // Net worth logic:
     // - Current month: calculate live (assets + portfolio)
-    // - Past months: use recorded monthly_stats, or 0 if no record
+    // - Past month WITH monthly_stats: use recorded value
+    // - Past month WITH transactions but NO monthly_stats: calculate backwards from current
+    // - Past month with NO transactions AND NO monthly_stats: show 0
     let totalNetWorth: number;
+    const liveNetWorth = totalAssets + totalPortfolioValue;
+
     if (isCurrentMonth) {
       // Current month: calculate live
-      totalNetWorth = totalAssets + totalPortfolioValue;
+      totalNetWorth = liveNetWorth;
     } else {
-      // Past month: use recorded value or 0
-      totalNetWorth = selectedMonthStats?.total_net_worth || 0;
+      // Past month: find recorded stats
+      const selectedMonthStats = monthlyStats.find(stat => {
+        const statDate = new Date(stat.month);
+        const statKey = `${statDate.getFullYear()}-${String(statDate.getMonth() + 1).padStart(2, '0')}`;
+        return statKey === selectedMonth;
+      });
+
+      if (selectedMonthStats?.total_net_worth !== undefined) {
+        // Has recorded monthly stats - use it
+        totalNetWorth = selectedMonthStats.total_net_worth;
+      } else if (hasTransactionsForMonth) {
+        // Calculate backwards from current month
+        // Sum up all balances from selected month to current month
+        const [selYear, selMonth] = selectedMonth.split('-').map(Number);
+        const selectedDate = new Date(selYear, selMonth - 1, 1);
+
+        let cumulativeBalance = 0;
+        const tempDate = new Date(selectedDate);
+        while (tempDate <= now) {
+          const tempKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}`;
+          cumulativeBalance += getMonthBalance(tempKey);
+          tempDate.setMonth(tempDate.getMonth() + 1);
+        }
+
+        // Selected month net worth = current - cumulative balance from selected to current
+        totalNetWorth = liveNetWorth - cumulativeBalance + getMonthBalance(selectedMonth);
+      } else {
+        // No transactions and no monthly_stats - show 0
+        totalNetWorth = 0;
+      }
     }
 
     // Calculate percentage changes from previous month
@@ -244,19 +290,20 @@ export default function Dashboard() {
       ? ((totalExpenses - previousMonthData.expenses) / previousMonthData.expenses) * 100
       : 0;
 
-    // Get previous month's net worth from monthly_stats for accurate change calculation
+    // Get previous month's net worth from monthly_stats for change calculation
+    const [year, month] = selectedMonth.split('-').map(Number);
+    const prevDate = new Date(year, month - 2, 1);
+    const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
     const prevMonthStats = monthlyStats.find(stat => {
       const statDate = new Date(stat.month);
-      const prevDate = new Date(year, month - 2, 1);
       const statKey = `${statDate.getFullYear()}-${String(statDate.getMonth() + 1).padStart(2, '0')}`;
-      const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
       return statKey === prevKey;
     });
 
     // Calculate net worth change
     const netWorthChange = prevMonthStats?.total_net_worth && prevMonthStats.total_net_worth > 0
       ? ((totalNetWorth - prevMonthStats.total_net_worth) / prevMonthStats.total_net_worth) * 100
-      : 0; // No change if no previous data
+      : 0;
 
     return {
       income: { amount: totalIncome, change: incomeChange },
@@ -344,7 +391,7 @@ export default function Dashboard() {
 
       data.push({
         month: monthLabel,
-        value: Math.round(monthTotal * 100) / 100
+        value: monthTotal
       });
     }
 
@@ -423,16 +470,12 @@ export default function Dashboard() {
     return Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
   }, [monthExpenses, monthIncome, userSettings]);
 
-  // Calculate net worth trend for last 12 months
-  // Strategy: Use recorded monthly_stats for past months (accurate historical data)
-  // and calculate live for current month only
-  //
-  // This ensures:
-  // - Past months show actual recorded net worth at month-end (like balance transfers)
-  // - Current month shows real-time calculated value
-  // - Historical data is accurate even after edits to past transactions
+  // Strategy: Calculate net worth backwards from current month
+  // - Current month: live calculation (assets + portfolio)
+  // - Previous month: next_month - (that_month_income - that_month_expenses)
+  // - If monthly_stats exists, use that instead
+  // - If no transactions for a month, show 0
   const netWorthTrend = useMemo(() => {
-    const data = [];
     const now = new Date();
     const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const profileCurrency = userSettings?.currency || 'USD';
@@ -445,63 +488,91 @@ export default function Dashboard() {
       statsMap.set(monthKey, stat.total_net_worth || 0);
     });
 
-    // Calculate cumulative values for each month
+    // Calculate current net worth (live)
+    const currentTotalAssets = assets.reduce((sum, asset) => {
+      return sum + convertCurrency(asset.amount, (asset as any).currency || 'USD', profileCurrency);
+    }, 0);
+
+    const currentTotalPortfolio = holdings.reduce((sum, holding) => {
+      const currentPrice = holding.current_price || holding.average_price || 0;
+      const valueInHoldingCurrency = holding.shares * currentPrice;
+      return sum + convertCurrency(valueInHoldingCurrency, holding.currency || 'USD', profileCurrency);
+    }, 0);
+
+    const currentNetWorth = currentTotalAssets + currentTotalPortfolio;
+
+    // Helper function to get month's balance (income - expenses)
+    const getMonthBalance = (monthKey: string) => {
+      const monthIncome = income
+        .filter(inc => {
+          const incDate = new Date(inc.date);
+          const incKey = `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}`;
+          return incKey === monthKey;
+        })
+        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency), 0);
+
+      const monthExpenses = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date);
+          const expKey = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
+          return expKey === monthKey;
+        })
+        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency), 0);
+
+      return { income: monthIncome, expenses: monthExpenses, balance: monthIncome - monthExpenses };
+    };
+
+    // Check if month has any transactions
+    const hasTransactions = (monthKey: string) => {
+      const { income: inc, expenses: exp } = getMonthBalance(monthKey);
+      return inc > 0 || exp > 0;
+    };
+
+    // Build array of months from oldest to newest (i=11 is oldest, i=0 is current)
+    const months: { key: string; label: string }[] = [];
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-
-      let monthNetWorth: number;
-
-      // Check if this is the current month - calculate live
-      if (monthKey === currentMonthKey) {
-        // Calculate live for current month
-        const cumulativeIncome = income
-          .filter(inc => {
-            const incDate = new Date(inc.date);
-            return incDate <= monthEnd;
-          })
-          .reduce((sum, inc) => {
-            return sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency);
-          }, 0);
-
-        const cumulativeExpenses = expenses
-          .filter(exp => {
-            const expDate = new Date(exp.date);
-            return expDate <= monthEnd;
-          })
-          .reduce((sum, exp) => {
-            return sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency);
-          }, 0);
-
-        const monthAssets = assets.reduce((sum, asset) => {
-          return sum + convertCurrency(asset.amount, (asset as any).currency || 'USD', profileCurrency);
-        }, 0);
-
-        const monthPortfolioValue = holdings.reduce((sum, holding) => {
-          const currentPrice = holding.current_price || holding.average_price || 0;
-          const valueInHoldingCurrency = holding.shares * currentPrice;
-          return sum + convertCurrency(valueInHoldingCurrency, holding.currency || 'USD', profileCurrency);
-        }, 0);
-
-        monthNetWorth = monthAssets + monthPortfolioValue + (cumulativeIncome - cumulativeExpenses);
-      } else if (statsMap.has(monthKey)) {
-        // Use recorded monthly stats for past months
-        monthNetWorth = statsMap.get(monthKey)!;
-      } else {
-        // No recorded stats for this past month - show 0
-        monthNetWorth = 0;
-      }
-
-      data.push({
-        month: monthLabel,
-        value: Math.round(monthNetWorth * 100) / 100
-      });
+      months.push({ key: monthKey, label: monthLabel });
     }
+
+    // Calculate backwards from current month
+    // Start from the end (current month) and work backwards
+    const netWorthByMonth = new Map<string, number>();
+
+    for (let i = months.length - 1; i >= 0; i--) {
+      const { key: monthKey } = months[i];
+
+      if (monthKey === currentMonthKey) {
+        // Current month: live calculation
+        netWorthByMonth.set(monthKey, currentNetWorth);
+      } else if (statsMap.has(monthKey)) {
+        // Has recorded monthly_stats - use it
+        netWorthByMonth.set(monthKey, statsMap.get(monthKey)!);
+      } else if (hasTransactions(monthKey)) {
+        // No monthly_stats but has transactions - calculate backwards
+        // This month's net worth = next month's net worth - this month's balance
+        const nextMonthKey = months[i + 1]?.key;
+        const nextMonthNetWorth = nextMonthKey ? (netWorthByMonth.get(nextMonthKey) || currentNetWorth) : currentNetWorth;
+        const { balance } = getMonthBalance(monthKey);
+        netWorthByMonth.set(monthKey, nextMonthNetWorth - balance);
+      } else {
+        // No transactions and no monthly_stats - show 0
+        netWorthByMonth.set(monthKey, 0);
+      }
+    }
+
+    // Build final data array
+    const data = months.map(({ key, label }) => ({
+      month: label,
+      value: Math.round((netWorthByMonth.get(key) || 0) * 100) / 100
+    }));
 
     return data;
   }, [assets, holdings, income, expenses, monthlyStats, userSettings]);
+
+
 
   return (
     <div className="p-6 min-h-screen bg-[var(--background)] transition-colors duration-300">
@@ -622,7 +693,6 @@ export default function Dashboard() {
                 <YAxis
                   stroke="#94a3b8"
                   style={{ fontSize: '12px' }}
-                  tickFormatter={(value) => formatCurrency(value)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -631,7 +701,6 @@ export default function Dashboard() {
                     borderRadius: '8px'
                   }}
                   labelStyle={{ color: '#f1f5f9' }}
-                  formatter={(value: any) => [formatCurrency(value), 'Spending']}
                 />
                 <Line
                   type="monotone"
