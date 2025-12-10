@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Menu, X } from 'lucide-react';
+import { CreditCard, Menu, X, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function LandingHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const { user, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
 
     // Handle click on Login/Signup - logout first if user is already logged in
@@ -49,8 +51,21 @@ export default function LandingHeader() {
                         </a>
                     </div>
 
-                    {/* Auth Buttons */}
+                    {/* Auth Buttons & Theme Toggle */}
                     <div className="hidden md:flex items-center space-x-4">
+                        {/* Theme Toggle */}
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2.5 glass-card rounded-xl hover:scale-110 transition-all duration-300"
+                            aria-label="Toggle theme"
+                        >
+                            {theme === 'light' ? (
+                                <Moon className="h-5 w-5 text-[var(--text-primary)]" />
+                            ) : (
+                                <Sun className="h-5 w-5 text-[var(--text-primary)]" />
+                            )}
+                        </button>
+                        
                         <button
                             onClick={() => handleAuthClick('/login')}
                             className="px-5 py-2.5 text-[var(--text-primary)] font-medium hover:text-[var(--accent-primary)] transition-colors"
@@ -99,6 +114,26 @@ export default function LandingHeader() {
                             >
                                 Demo
                             </a>
+                            <hr className="border-[var(--glass-border)]" />
+                            
+                            {/* Theme Toggle - Mobile */}
+                            <button
+                                onClick={toggleTheme}
+                                className="flex items-center space-x-3 text-[var(--text-primary)] font-medium py-2"
+                            >
+                                {theme === 'light' ? (
+                                    <>
+                                        <Moon className="h-5 w-5" />
+                                        <span>Dark Mode</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sun className="h-5 w-5" />
+                                        <span>Light Mode</span>
+                                    </>
+                                )}
+                            </button>
+                            
                             <hr className="border-[var(--glass-border)]" />
                             <button
                                 onClick={() => {
