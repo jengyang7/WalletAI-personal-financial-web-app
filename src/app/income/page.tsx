@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, DollarSign, Briefcase, Edit2, Trash2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Plus, DollarSign, Briefcase, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
@@ -44,13 +43,30 @@ export default function IncomePage() {
   });
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [deletingIncome, setDeletingIncome] = useState<string | null>(null);
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
+
+  const loadIncome = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('income')
+        .select('*')
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setIncome(data || []);
+    } catch (error) {
+      console.error('Error loading income:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (user) {
       loadIncome();
       loadSettings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadSettings = async () => {
@@ -68,22 +84,6 @@ export default function IncomePage() {
   const profileCurrency = userSettings?.currency || 'USD';
   const formatCurrency = getCurrencyFormatter(profileCurrency);
   const currencySymbol = getCurrencySymbol(newIncome.currency || profileCurrency);
-
-  const loadIncome = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('income')
-        .select('*')
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      setIncome(data || []);
-    } catch (error) {
-      console.error('Error loading income:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Filter income by selected month (or show all)
   const filteredIncome = useMemo(() => {
@@ -116,7 +116,7 @@ export default function IncomePage() {
     }, {} as Record<string, Record<string, Income[]>>);
   }, [filteredIncome]);
 
-  const handleAddIncome = async (e: React.FormEvent) => {
+  const handleAddIncome = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (newIncome.source && newIncome.amount) {
       try {
@@ -181,7 +181,7 @@ export default function IncomePage() {
           amount: editingIncome.amount,
           description: editingIncome.description,
           date: editingIncome.date,
-          currency: (editingIncome as any).currency || profileCurrency
+          currency: (editingIncome as Income & { currency?: string }).currency || profileCurrency
         })
         .eq('id', editingIncome.id);
 
@@ -220,7 +220,7 @@ export default function IncomePage() {
   }, [income, userSettings, selectedMonth]);
 
   // Calculate income by source for current month
-  const incomeBySource = useMemo(() => {
+  const _incomeBySource = useMemo(() => {
     const profileCurrency = userSettings?.currency || 'USD';
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -380,8 +380,8 @@ export default function IncomePage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={newIncome.currency as any}
-                  onChange={(e) => setNewIncome({ ...newIncome, currency: e.target.value } as any)}
+                  value={newIncome.currency}
+                  onChange={(e) => setNewIncome({ ...newIncome, currency: e.target.value })}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
@@ -520,7 +520,7 @@ export default function IncomePage() {
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Amount</label>
                   <div className="relative">
-                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingIncome as any)?.currency || profileCurrency)}</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingIncome as Income & { currency?: string })?.currency || profileCurrency)}</span>
                     <input
                       type="number"
                       value={editingIncome.amount}
@@ -545,8 +545,8 @@ export default function IncomePage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={(editingIncome as any).currency || profileCurrency}
-                  onChange={(e) => setEditingIncome({ ...(editingIncome as any), currency: e.target.value } as any)}
+                  value={(editingIncome as Income & { currency?: string }).currency || profileCurrency}
+                  onChange={(e) => setEditingIncome({ ...(editingIncome as Income & { currency?: string }), currency: e.target.value } as Income)}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Wallet, Edit2, Trash2, TrendingUp, History, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Plus, Wallet, Trash2, TrendingUp, History, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
@@ -52,7 +51,7 @@ export default function AssetsPage() {
     customType: '',
     currency: 'USD'
   });
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [deletingAsset, setDeletingAsset] = useState<string | null>(null);
   const [showCustomType, setShowCustomType] = useState(false);
@@ -254,8 +253,7 @@ export default function AssetsPage() {
     }, 0);
   }, [assets, profileCurrency]);
 
-  // Calculate assets by type for pie chart
-  const assetsByType = useMemo(() => {
+  const _assetsByType = useMemo(() => {
     const typeTotals: Record<string, number> = {};
 
     assets.forEach(asset => {
@@ -437,8 +435,8 @@ export default function AssetsPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={newAsset.currency as any}
-                  onChange={(e) => setNewAsset({ ...newAsset, currency: e.target.value } as any)}
+                  value={newAsset.currency}
+                  onChange={(e) => setNewAsset({ ...newAsset, currency: e.target.value })}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
                   {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (
@@ -679,7 +677,7 @@ export default function AssetsPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Current Value</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingAsset as any)?.currency || profileCurrency)}</span>
+                  <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingAsset as Asset & { currency?: string })?.currency || profileCurrency)}</span>
                   <input
                     type="number"
                     value={editingAsset.amount}
@@ -693,8 +691,8 @@ export default function AssetsPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={(editingAsset as any).currency || profileCurrency}
-                  onChange={(e) => setEditingAsset({ ...(editingAsset as any), currency: e.target.value } as any)}
+                  value={(editingAsset as Asset & { currency?: string }).currency || profileCurrency}
+                  onChange={(e) => setEditingAsset({ ...(editingAsset as Asset & { currency?: string }), currency: e.target.value } as Asset)}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] transition-all duration-300"
                 >
                   {['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'SGD', 'MYR'].map((c) => (

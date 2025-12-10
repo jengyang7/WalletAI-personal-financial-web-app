@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Car, Home, Gamepad2, Edit2, Trash2, CreditCard, Calendar, RefreshCw, X } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X } from 'lucide-react';
 import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { useFinance, type Subscription } from '@/context/FinanceContext';
 import { useMonth } from '@/context/MonthContext';
@@ -20,37 +19,6 @@ interface Expense {
   category: string;
   currency?: string;
 }
-
-const mockExpenses: Expense[] = [
-  {
-    id: '1',
-    description: 'Online Shopping',
-    amount: 200.00,
-    date: 'July 27, 2024',
-    category: 'Shopping'
-  },
-  {
-    id: '2',
-    description: 'Gas Station',
-    amount: 40.00,
-    date: 'July 26, 2024',
-    category: 'Transportation'
-  },
-  {
-    id: '3',
-    description: 'Dinner Out',
-    amount: 80.00,
-    date: 'July 24, 2024',
-    category: 'Food & Dining'
-  },
-  {
-    id: '4',
-    description: 'Grocery Shopping',
-    amount: 150.00,
-    date: 'July 22, 2024',
-    category: 'Groceries'
-  }
-];
 
 const categories = CATEGORY_OPTIONS;
 
@@ -74,7 +42,7 @@ export default function Expenses() {
   const { expenses, addExpense, subscriptions, reloadSubscriptions } = useFinance();
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
   const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
@@ -219,7 +187,7 @@ export default function Expenses() {
   }, [expenses, userSettings, selectedMonth]);
 
   // Calculate expenses by category for current month
-  const expensesByCategory = useMemo(() => {
+  const _expensesByCategory = useMemo(() => {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const categoryTotals: Record<string, number> = {};
@@ -248,10 +216,10 @@ export default function Expenses() {
         name,
         value,
         color: colors[index % colors.length],
-        percentage: total > 0 ? Math.round((value / total) * 100) : 0
-      }))
-    };
-  }, [expenses, userSettings]);
+      percentage: total > 0 ? Math.round((value / total) * 100) : 0
+    }))
+  };
+}, [expenses, userSettings, profileCurrency]);
 
   // Group expenses by month and day
   const groupedExpenses = filteredExpenses.reduce((acc, expense) => {
@@ -269,7 +237,7 @@ export default function Expenses() {
     return acc;
   }, {} as Record<string, Record<string, Expense[]>>);
 
-  const handleAddExpense = async (e: React.FormEvent) => {
+  const handleAddExpense = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (newExpense.description && newExpense.amount) {
       await addExpense({
@@ -326,7 +294,7 @@ export default function Expenses() {
           amount: editingExpense.amount,
           category: editingExpense.category,
           date: editingExpense.date,
-          currency: (editingExpense as any).currency || 'USD'
+          currency: (editingExpense as Expense & { currency?: string }).currency || 'USD'
         })
         .eq('id', editingExpense.id);
 
@@ -746,7 +714,7 @@ export default function Expenses() {
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Amount</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingExpense as any)?.currency || profileCurrency)}</span>
+                    <span className="absolute left-3 top-2 text-[var(--text-secondary)]">{getCurrencySymbol((editingExpense as Expense & { currency?: string })?.currency || profileCurrency)}</span>
                     <input
                       type="number"
                       value={editingExpense.amount}
@@ -786,8 +754,8 @@ export default function Expenses() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
                 <select
-                  value={(editingExpense as any).currency || profileCurrency}
-                  onChange={(e) => setEditingExpense({ ...(editingExpense as any), currency: e.target.value } as any)}
+                  value={(editingExpense as Expense & { currency?: string }).currency || profileCurrency}
+                  onChange={(e) => setEditingExpense({ ...(editingExpense as Expense & { currency?: string }), currency: e.target.value } as Expense)}
                   className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (

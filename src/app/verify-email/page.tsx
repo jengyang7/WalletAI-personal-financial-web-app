@@ -61,7 +61,7 @@ export default function VerifyEmail() {
           <h2 className="text-2xl font-semibold text-white mb-4">Check Your Email</h2>
           
           <p className="text-slate-300 mb-6">
-            We've sent a verification link to:
+            We&apos;ve sent a verification link to:
           </p>
           
           {email && (
@@ -115,7 +115,7 @@ export default function VerifyEmail() {
         {/* Help Text */}
         <div className="mt-6 text-center">
           <p className="text-slate-400 text-xs">
-            Didn't receive the email? Check your spam folder or try resending.
+            Didn&apos;t receive the email? Check your spam folder or try resending.
           </p>
         </div>
       </div>

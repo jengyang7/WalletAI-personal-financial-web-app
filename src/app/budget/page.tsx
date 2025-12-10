@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, ShoppingCart, Car, Home, Gamepad2, Utensils, User, HelpCircle, Edit2, Trash2 } from 'lucide-react';
+import { Plus, ShoppingCart, Car, Home, Gamepad2, Utensils, User, HelpCircle, Trash2 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
+import { getCurrencyFormatter } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
 import { useMonth } from '@/context/MonthContext';
@@ -37,7 +37,7 @@ const getBudgetIcon = (iconType: string) => {
   }
 };
 
-const getProgressBarColor = (_percentage: number) => {
+const getProgressBarColor = () => {
   // Always use a blue progress bar for a calmer, consistent look
   return 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-primary-hover)] shadow-[0_0_12px_rgba(59,130,246,0.35)]';
 };
@@ -54,7 +54,7 @@ export default function Budget() {
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
   const [showAddBudget, setShowAddBudget] = useState(false);
-  const [editingBudget, setEditingBudget] = useState<any>(null);
+  const [editingBudget, setEditingBudget] = useState<{ id: string; category: string; allocated_amount: number; currency?: string } | null>(null);
   const [deletingBudget, setDeletingBudget] = useState<string | null>(null);
   const [newBudget, setNewBudget] = useState({
     category: '',
@@ -62,7 +62,7 @@ export default function Budget() {
     currency: 'USD'
   });
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
 
   useEffect(() => {
     // Use master category list instead of deriving from expenses
@@ -70,7 +70,7 @@ export default function Budget() {
     if (!newBudget.category && CATEGORY_OPTIONS.length > 0) {
       setNewBudget(prev => ({ ...prev, category: CATEGORY_OPTIONS[0] }));
     }
-  }, []);
+  }, [newBudget.category]);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -91,7 +91,6 @@ export default function Budget() {
   }, [user]);
 
   const profileCurrency = normalizeCurrencyCode(userSettings?.currency);
-  const formatCurrency = getCurrencyFormatter(profileCurrency);
   const formatBy = (code?: string) => getCurrencyFormatter(code || profileCurrency);
 
   const handleAddBudget = async (e: React.FormEvent) => {
@@ -270,7 +269,7 @@ export default function Budget() {
                   </div>
                   <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(percentage)}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor()}`}
                       style={{ width: `${Math.min(percentage, 100)}%` }}
                     ></div>
                   </div>

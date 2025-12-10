@@ -2,14 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { supabase, User } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface AuthContextType {
   user: SupabaseUser | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ user: SupabaseUser; session: Session } | void>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ user: SupabaseUser | null; session: Session | null } | void>;
   logout: () => Promise<void>;
 }
 

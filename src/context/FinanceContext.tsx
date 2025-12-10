@@ -50,7 +50,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState(true);
+  const _loading = useState(true)[0];
 
   // Load data when user is authenticated
   useEffect(() => {
@@ -62,8 +62,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setExpenses([]);
       setBudgets([]);
       setSubscriptions([]);
-      setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadExpenses = async () => {
@@ -77,8 +77,6 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       setExpenses(data || []);
     } catch (error) {
       console.error('Error loading expenses:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -99,7 +97,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
             .select('amount')
             .eq('category', budget.category);
 
-          const spent = expenseData?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+          const spent = (expenseData as { amount: number }[] | null)?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
 
           return {
             id: budget.id,

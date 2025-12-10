@@ -1,7 +1,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, Legend } from 'recharts';
-import { Target, TrendingUp, TrendingDown, DollarSign, Wallet, CreditCard, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Wallet, CreditCard, Calendar } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
@@ -12,37 +12,48 @@ import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
 import Link from 'next/link';
 
-const financialData = {
-  income: { amount: 5500, change: 10 },
-  expenses: { amount: 3200, change: -5 },
-  savings: { amount: 2300, change: 15 }
-};
+interface UserSettings {
+  currency?: string;
+  [key: string]: unknown;
+}
 
-const spendingData = [
-  { name: 'Groceries', value: 1280, color: '#3B82F6', percentage: 40 },
-  { name: 'Transportation', value: 640, color: '#10B981', percentage: 20 },
-  { name: 'Housing', value: 960, color: '#F59E0B', percentage: 30 },
-  { name: 'Entertainment', value: 320, color: '#8B5CF6', percentage: 10 }
-];
+interface IncomeRecord {
+  amount: number;
+  date: string;
+  currency?: string;
+  [key: string]: unknown;
+}
 
-const recentExpenses = [
-  { date: '2024-07-15', description: 'Grocery Shopping', category: 'Groceries', amount: -150.00 },
-  { date: '2024-07-14', description: 'Salary Deposit', category: 'Income', amount: 5500.00 },
-  { date: '2024-07-12', description: 'Dinner Out', category: 'Entertainment', amount: -80.00 },
-  { date: '2024-07-10', description: 'Gas Station', category: 'Transportation', amount: -40.00 },
-  { date: '2024-07-08', description: 'Rent Payment', category: 'Housing', amount: -960.00 }
-];
+interface AssetRecord {
+  amount: number;
+  currency?: string;
+  [key: string]: unknown;
+}
+
+interface HoldingRecord {
+  shares: number;
+  current_price?: number;
+  average_price?: number;
+  currency?: string;
+  [key: string]: unknown;
+}
+
+interface MonthlyStatRecord {
+  month: string;
+  total_net_worth?: number;
+  [key: string]: unknown;
+}
 
 export default function Dashboard() {
   const { expenses, subscriptions } = useFinance();
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
-  const [userSettings, setUserSettings] = useState<any>(null);
-  const [income, setIncome] = useState<any[]>([]);
-  const [assets, setAssets] = useState<any[]>([]);
-  const [holdings, setHoldings] = useState<any[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
+  const [income, setIncome] = useState<IncomeRecord[]>([]);
+  const [assets, setAssets] = useState<AssetRecord[]>([]);
+  const [holdings, setHoldings] = useState<HoldingRecord[]>([]);
   const [spendingPeriod, setSpendingPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStatRecord[]>([]);
   const isLoadingRef = useRef(false);
 
   useEffect(() => {
@@ -145,7 +156,7 @@ export default function Dashboard() {
     const prevExpensesTotal = prevExpenses.reduce((sum, exp) => {
       const amountInProfileCurrency = convertCurrency(
         exp.amount,
-        (exp as any).currency || 'USD',
+        (exp as { currency?: string }).currency || 'USD',
         profileCurrency
       );
       return sum + amountInProfileCurrency;
@@ -155,7 +166,7 @@ export default function Dashboard() {
     const prevIncomeTotal = prevIncome.reduce((sum, inc) => {
       const amountInProfileCurrency = convertCurrency(
         inc.amount,
-        (inc as any).currency || 'USD',
+        (inc as IncomeRecord).currency || 'USD',
         profileCurrency
       );
       return sum + amountInProfileCurrency;
@@ -174,7 +185,7 @@ export default function Dashboard() {
     const totalExpenses = monthExpenses.reduce((sum, exp) => {
       const amountInProfileCurrency = convertCurrency(
         exp.amount,
-        (exp as any).currency || 'USD',
+        (exp as { currency?: string }).currency || 'USD',
         profileCurrency
       );
       return sum + amountInProfileCurrency;
@@ -183,7 +194,7 @@ export default function Dashboard() {
     const totalIncome = monthIncome.reduce((sum, inc) => {
       const amountInProfileCurrency = convertCurrency(
         inc.amount,
-        (inc as any).currency || 'USD',
+        (inc as IncomeRecord).currency || 'USD',
         profileCurrency
       );
       return sum + amountInProfileCurrency;
@@ -192,7 +203,7 @@ export default function Dashboard() {
     const totalAssets = assets.reduce((sum, asset) => {
       const amountInProfileCurrency = convertCurrency(
         asset.amount,
-        (asset as any).currency || 'USD',
+        (asset as AssetRecord).currency || 'USD',
         profileCurrency
       );
       return sum + amountInProfileCurrency;
@@ -225,14 +236,14 @@ export default function Dashboard() {
           const incDate = new Date(inc.date);
           return `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
         })
-        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency), 0);
+        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as IncomeRecord).currency || 'USD', profileCurrency), 0);
 
       const mExpenses = expenses
         .filter(exp => {
           const expDate = new Date(exp.date);
           return `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
         })
-        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency), 0);
+        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as { currency?: string }).currency || 'USD', profileCurrency), 0);
 
       return mIncome - mExpenses;
     };
@@ -310,7 +321,7 @@ export default function Dashboard() {
       expenses: { amount: totalExpenses, change: expenseChange },
       netWorth: { amount: totalNetWorth, change: netWorthChange }
     };
-  }, [monthExpenses, monthIncome, assets, holdings, previousMonthData, monthlyStats, selectedMonth, userSettings]);
+  }, [monthExpenses, monthIncome, assets, holdings, previousMonthData, monthlyStats, selectedMonth, userSettings, expenses, income]);
 
   const formatCurrency = useMemo(() => getCurrencyFormatter(userSettings?.currency || 'USD'), [userSettings?.currency]);
 
@@ -332,7 +343,7 @@ export default function Dashboard() {
       // Convert each expense to profile currency
       const expenseInProfileCurrency = convertCurrency(
         exp.amount,
-        (exp as any).currency || 'USD',
+        (exp as { currency?: string }).currency || 'USD',
         profileCurrency
       );
       categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + expenseInProfileCurrency;
@@ -354,13 +365,13 @@ export default function Dashboard() {
   }, [monthExpenses, expenses, selectedMonth, spendingPeriod, userSettings]);
 
   // Get recent expenses for selected month (last 5)
-  const recentExpensesList = useMemo(() => {
+  const _recentExpensesList = useMemo(() => {
     return monthExpenses.slice(0, 5).map(exp => ({
       date: new Date(exp.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
       description: exp.description,
       category: exp.category,
       amount: -exp.amount,
-      currency: (exp as any).currency || 'USD' // Include currency from expense
+      currency: (exp as { currency?: string }).currency || 'USD' // Include currency from expense
     }));
   }, [monthExpenses]);
 
@@ -372,7 +383,6 @@ export default function Dashboard() {
 
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
 
       const monthTotal = expenses
@@ -383,7 +393,7 @@ export default function Dashboard() {
         .reduce((sum, exp) => {
           const amountInProfileCurrency = convertCurrency(
             exp.amount,
-            (exp as any).currency || 'USD',
+            (exp as { currency?: string }).currency || 'USD',
             profileCurrency
           );
           return sum + amountInProfileCurrency;
@@ -416,7 +426,7 @@ export default function Dashboard() {
         .reduce((sum, exp) => {
           const amountInProfileCurrency = convertCurrency(
             exp.amount,
-            (exp as any).currency || 'USD',
+            (exp as { currency?: string }).currency || 'USD',
             profileCurrency
           );
           return sum + amountInProfileCurrency;
@@ -430,7 +440,7 @@ export default function Dashboard() {
         .reduce((sum, inc) => {
           const amountInProfileCurrency = convertCurrency(
             inc.amount,
-            (inc as any).currency || 'USD',
+            (inc as IncomeRecord).currency || 'USD',
             profileCurrency
           );
           return sum + amountInProfileCurrency;
@@ -451,7 +461,7 @@ export default function Dashboard() {
     const totalExpenses = monthExpenses.reduce((sum, exp) => {
       const amountInProfileCurrency = convertCurrency(
         exp.amount,
-        (exp as any).currency || 'USD',
+        (exp as { currency?: string }).currency || 'USD',
         userSettings?.currency || 'USD'
       );
       return sum + amountInProfileCurrency;
@@ -460,7 +470,7 @@ export default function Dashboard() {
     const totalIncome = monthIncome.reduce((sum, inc) => {
       const amountInProfileCurrency = convertCurrency(
         inc.amount,
-        (inc as any).currency || 'USD',
+        (inc as IncomeRecord).currency || 'USD',
         userSettings?.currency || 'USD'
       );
       return sum + amountInProfileCurrency;
@@ -490,7 +500,7 @@ export default function Dashboard() {
 
     // Calculate current net worth (live)
     const currentTotalAssets = assets.reduce((sum, asset) => {
-      return sum + convertCurrency(asset.amount, (asset as any).currency || 'USD', profileCurrency);
+      return sum + convertCurrency(asset.amount, (asset as AssetRecord).currency || 'USD', profileCurrency);
     }, 0);
 
     const currentTotalPortfolio = holdings.reduce((sum, holding) => {
@@ -509,7 +519,7 @@ export default function Dashboard() {
           const incKey = `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}`;
           return incKey === monthKey;
         })
-        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as any).currency || 'USD', profileCurrency), 0);
+        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as IncomeRecord).currency || 'USD', profileCurrency), 0);
 
       const monthExpenses = expenses
         .filter(exp => {
@@ -517,7 +527,7 @@ export default function Dashboard() {
           const expKey = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
           return expKey === monthKey;
         })
-        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as any).currency || 'USD', profileCurrency), 0);
+        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as { currency?: string }).currency || 'USD', profileCurrency), 0);
 
       return { income: monthIncome, expenses: monthExpenses, balance: monthIncome - monthExpenses };
     };
@@ -701,7 +711,7 @@ export default function Dashboard() {
                     borderRadius: '8px'
                   }}
                   labelStyle={{ color: '#f1f5f9' }}
-                  formatter={(value: any) => [`Spending: ${formatCurrency(Number(Number(value).toFixed(2)))}`, '']}
+                  formatter={(value: number) => [`Spending: ${formatCurrency(Number(Number(value).toFixed(2)))}`, '']}
                 />
                 <Line
                   type="monotone"
@@ -834,7 +844,7 @@ export default function Dashboard() {
                   borderRadius: '8px'
                 }}
                 labelStyle={{ color: '#f1f5f9' }}
-                formatter={(value: any) => formatCurrency(value)}
+                formatter={(value: number) => formatCurrency(value)}
               />
               <Legend />
               <Bar dataKey="income" fill="#10B981" name="Income" />
@@ -1007,7 +1017,7 @@ export default function Dashboard() {
                     borderRadius: '8px'
                   }}
                   labelStyle={{ color: '#f1f5f9' }}
-                  formatter={(value: any) => [formatCurrency(value), 'Net Worth']}
+                  formatter={(value: number) => [formatCurrency(value), 'Net Worth']}
                 />
                 <Line
                   type="monotone"

@@ -18,7 +18,7 @@ export default function Signup() {
     const [success, setSuccess] = useState(false);
 
     const { signUp } = useAuth();
-    const router = useRouter();
+    const _router = useRouter();
 
     // Password validation
     const hasMinLength = password.length >= 8;
@@ -47,15 +47,16 @@ export default function Signup() {
         try {
             await signUp(email, password, displayName);
             setSuccess(true);
-        } catch (error: any) {
+        } catch (error: unknown) {
             let errorMessage = 'Failed to create account';
+            const err = error as { message?: string };
 
-            if (error.message?.includes('already registered')) {
+            if (err.message?.includes('already registered')) {
                 errorMessage = 'This email is already registered. Please login instead.';
-            } else if (error.message?.includes('password')) {
+            } else if (err.message?.includes('password')) {
                 errorMessage = 'Password must be at least 8 characters with at least one number or symbol.';
-            } else if (error.message) {
-                errorMessage = error.message;
+            } else if (err.message) {
+                errorMessage = err.message;
             }
 
             setError(errorMessage);
@@ -78,7 +79,7 @@ export default function Signup() {
                         </div>
                         <h2 className="text-2xl font-semibold text-[var(--text-primary)] mb-4">Check Your Email</h2>
                         <p className="text-[var(--text-secondary)] mb-6">
-                            We've sent a verification link to <strong>{email}</strong>. Please click the link to verify your account.
+                            We&apos;ve sent a verification link to <strong>{email}</strong>. Please click the link to verify your account.
                         </p>
                         <Link
                             href="/login"

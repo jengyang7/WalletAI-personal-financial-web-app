@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, TrendingUp, TrendingDown, Edit2, Trash2, RefreshCw, History, Calendar } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Trash2, RefreshCw, History, Calendar, Edit2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import { getCurrencyFormatter, getCurrencySymbol, CURRENCY_OPTIONS } from '@/lib/currency';
+import { getCurrencyFormatter, CURRENCY_OPTIONS } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 
 interface Holding {
@@ -36,14 +36,12 @@ export default function Investments() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddHolding, setShowAddHolding] = useState(false);
-  const [editingHolding, setEditingHolding] = useState<Holding | null>(null);
   const [deletingHolding, setDeletingHolding] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState('USD');
-  const [userSettings, setUserSettings] = useState<any>(null);
-  const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
+  const _userSettings = useState<{ currency?: string; [key: string]: unknown } | null>(null)[0];
+  const [monthlyStats, setMonthlyStats] = useState<Array<{ month: string; total_net_worth?: number; total_portfolio_value?: number }>>([]);
   const [historicalPrices, setHistoricalPrices] = useState<Record<string, number>>({});
-  const [showTransactionHistory, setShowTransactionHistory] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [newHolding, setNewHolding] = useState<{
     symbol: string;
@@ -61,15 +59,6 @@ export default function Investments() {
     purchase_date: new Date().toISOString().split('T')[0]
   });
 
-  useEffect(() => {
-    if (user) {
-      loadHoldings();
-      loadSettings();
-      loadMonthlyStats();
-      loadTransactions();
-    }
-  }, [user]);
-
   const loadSettings = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -78,7 +67,6 @@ export default function Investments() {
       .eq('user_id', user.id)
       .single();
     if (data) {
-      setUserSettings(data);
       setDisplayCurrency(data.currency || 'USD'); // Set default display currency from user settings
     }
   };
@@ -151,13 +139,6 @@ export default function Investments() {
     setHistoricalPrices(pricesCache);
   };
 
-  // Load historical prices when holdings change
-  useEffect(() => {
-    if (holdings.length > 0) {
-      loadHistoricalPrices();
-    }
-  }, [holdings]);
-
   const formatCurrency = getCurrencyFormatter(displayCurrency);
 
   const loadHoldings = async () => {
@@ -184,6 +165,24 @@ export default function Investments() {
       setLoading(false);
     }
   };
+
+  // Load historical prices when holdings change
+  useEffect(() => {
+    if (holdings.length > 0) {
+      loadHistoricalPrices();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdings]);
+
+  useEffect(() => {
+    if (user) {
+      loadHoldings();
+      loadSettings();
+      loadMonthlyStats();
+      loadTransactions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const isStale = (lastUpdated?: string) => {
     if (!lastUpdated) return true;
@@ -335,9 +334,10 @@ export default function Investments() {
         });
         setShowAddHolding(false);
 
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const err = error as { message?: string };
         console.error('Error adding holding:', error);
-        alert(`Failed to add holding: ${error?.message || 'Unknown error'}`);
+        alert(`Failed to add holding: ${err?.message || 'Unknown error'}`);
       }
     }
   };
@@ -522,7 +522,7 @@ export default function Investments() {
       // Convert to display currency
       const valueInDisplayCurrency = convertCurrency(valueInHoldingCurrency, h.currency || 'USD', displayCurrency);
       // Derive asset class with sensible default so crypto isn't lost
-      let key = (h as any).asset_class as string | undefined;
+      let key = (h as Holding & { asset_class?: string }).asset_class;
       if (!key) {
         const symbol = (h.symbol || '').toUpperCase();
         // Heuristic: treat symbols like BTC-USD / ETH-USD as crypto
@@ -537,7 +537,7 @@ export default function Investments() {
       color: colors[index % colors.length]
     }));
     return entries.sort((a, b) => b.value - a.value);
-  }, [holdings, portfolioStats.totalValue, displayCurrency]);
+  }, [holdings, displayCurrency]);
 
   // Portfolio performance over last 12 months
   // Strategy: Calculate portfolio value at each month-end based on:
@@ -801,7 +801,7 @@ export default function Investments() {
                       borderRadius: '8px'
                     }}
                     labelStyle={{ color: '#f1f5f9' }}
-                    formatter={(value: any) => [formatCurrency(value), 'Portfolio Value']}
+                    formatter={(value: number) => [formatCurrency(value), 'Portfolio Value']}
                   />
                   <Line
                     type="monotone"

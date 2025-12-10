@@ -23,8 +23,9 @@ export default function ForgotPassword() {
 
             if (error) throw error;
             setSuccess(true);
-        } catch (error: any) {
-            setError(error.message || 'Failed to send reset email');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email';
+            setError(errorMessage);
             setLoading(false);
         }
     };
@@ -44,7 +45,7 @@ export default function ForgotPassword() {
                         </div>
                         <h2 className="text-2xl font-semibold text-[var(--text-primary)] mb-4">Check Your Email</h2>
                         <p className="text-[var(--text-secondary)] mb-6">
-                            We've sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the instructions.
+                            We&apos;ve sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the instructions.
                         </p>
                         <Link
                             href="/login"
@@ -83,7 +84,7 @@ export default function ForgotPassword() {
                 <div className="glass-card rounded-2xl p-8 shadow-2xl">
                     <h2 className="text-2xl font-semibold text-[var(--text-primary)] mb-2">Forgot Password?</h2>
                     <p className="text-[var(--text-secondary)] text-sm mb-6">
-                        Enter your email address and we'll send you a link to reset your password.
+                        Enter your email address and we&apos;ll send you a link to reset your password.
                     </p>
 
                     {error && (

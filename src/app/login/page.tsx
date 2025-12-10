@@ -24,18 +24,19 @@ export default function Login() {
     try {
       await signIn(email, password);
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle specific Supabase auth errors
       let errorMessage = 'Failed to sign in';
+      const err = error as { message?: string };
 
-      if (error.message?.includes('Invalid login credentials')) {
+      if (err.message?.includes('Invalid login credentials')) {
         errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (error.message?.includes('Email not confirmed')) {
+      } else if (err.message?.includes('Email not confirmed')) {
         errorMessage = 'Please check your email and click the verification link before signing in.';
-      } else if (error.message?.includes('Too many requests')) {
+      } else if (err.message?.includes('Too many requests')) {
         errorMessage = 'Too many login attempts. Please wait a moment before trying again.';
-      } else if (error.message) {
-        errorMessage = error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
 
       setError(errorMessage);
@@ -139,7 +140,7 @@ export default function Login() {
 
           <div className="mt-6 text-center">
             <p className="text-[var(--text-secondary)] text-sm">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <Link href="/signup" className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] font-semibold transition-colors">
                 Sign up
               </Link>

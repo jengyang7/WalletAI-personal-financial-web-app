@@ -192,7 +192,7 @@ export default function LandingPage() {
                         <div className="flex flex-col md:flex-row items-center gap-8">
                             <div className="flex-1">
                                 <h3 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">
-                                    "How can I save more this month?"
+                                    &quot;How can I save more this month?&quot;
                                 </h3>
                                 <p className="text-[var(--text-secondary)] text-lg mb-6">
                                     Just ask your AI advisor. Get instant, personalized recommendations based on your actual spending data and financial goals.

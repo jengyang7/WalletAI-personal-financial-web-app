@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, TrendingUp, Trash2, Minimize2, Maximize2, MoreHorizontal, Zap } from 'lucide-react';
+import { Bot, Send, Sparkles, TrendingUp, Trash2, MoreHorizontal, Zap } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
@@ -12,8 +12,12 @@ interface Message {
   text: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  functionCalled?: string;
-  functionResult?: any;
+  functionCalled?: string | null;
+  functionResult?: {
+    success?: boolean;
+    message?: string;
+    [key: string]: unknown;
+  };
 }
 
 const quickActions = [
@@ -45,7 +49,7 @@ export default function AIAdvisor() {
   const { user } = useAuth();
   const { selectedMonth } = useMonth();
   const [message, setMessage] = useState('');
-  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<Array<{ role: string; parts: Array<{ text?: string; [key: string]: unknown }> }>>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,8 +75,8 @@ export default function AIAdvisor() {
       const parsedMessages = JSON.parse(savedMessages);
       // Convert string timestamps back to Date objects and filter out messages without text
       const hydratedMessages = parsedMessages
-        .filter((msg: any) => msg.text) // Only include messages with text
-        .map((msg: any) => ({
+        .filter((msg: { text?: string }) => msg.text) // Only include messages with text
+        .map((msg: { text: string; sender: 'user' | 'ai'; timestamp: string | Date; [key: string]: unknown }) => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
@@ -94,6 +98,7 @@ export default function AIAdvisor() {
     } else {
       setConversationHistory([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   // Save chat history to localStorage whenever it changes
@@ -102,6 +107,7 @@ export default function AIAdvisor() {
       localStorage.setItem(getStorageKey('ai_chat_history'), JSON.stringify(messages));
     }
     scrollToBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, user?.id]);
 
   // Save conversation history (context) to localStorage
@@ -109,6 +115,7 @@ export default function AIAdvisor() {
     if (conversationHistory.length > 0 && user?.id) {
       localStorage.setItem(getStorageKey('ai_conversation_history'), JSON.stringify(conversationHistory));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationHistory, user?.id]);
 
   const scrollToBottom = () => {

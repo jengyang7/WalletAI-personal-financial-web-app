@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
@@ -14,7 +14,6 @@ export default function ResetPassword() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
-    const router = useRouter();
 
     // Password validation
     const hasMinLength = password.length >= 8;
@@ -45,8 +44,9 @@ export default function ResetPassword() {
             // Sign out the user so they must login again with new password
             await supabase.auth.signOut();
             setSuccess(true);
-        } catch (error: any) {
-            setError(error.message || 'Failed to reset password');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
+            setError(errorMessage);
             setLoading(false);
         }
     };

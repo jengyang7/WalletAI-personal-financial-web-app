@@ -316,11 +316,11 @@ async function getUserCurrency(userId: string): Promise<string> {
 }
 
 // Function implementations
-async function executeFunction(functionName: string, args: any, userId: string, userCurrency: string = 'USD'): Promise<any> {
+async function executeFunction(functionName: string, args: Record<string, unknown>, userId: string, userCurrency: string = 'USD'): Promise<Record<string, unknown>> {
   try {
     // Allow AI to override currency via args.display_currency
     // This enables users to ask "Show me in USD" even if their default is MYR
-    const targetCurrency = args.display_currency ? normalizeCurrencyCode(args.display_currency) : userCurrency;
+    const targetCurrency = args.display_currency ? normalizeCurrencyCode(args.display_currency as string) : userCurrency;
 
     switch (functionName) {
       case 'get_expenses':
@@ -363,40 +363,40 @@ async function executeFunction(functionName: string, args: any, userId: string, 
 }
 
 // Function: Get Expenses
-async function getExpenses(userId: string, params: any, userCurrency: string) {
+async function getExpenses(userId: string, params: Record<string, unknown>, userCurrency: string) {
   let query = supabase
     .from('expenses')
     .select('*')
     .eq('user_id', userId);
 
   if (params.category) {
-    query = query.eq('category', params.category);
+    query = query.eq('category', params.category as string);
   }
 
   if (params.start_date) {
-    query = query.gte('date', params.start_date);
+    query = query.gte('date', params.start_date as string);
   }
 
   if (params.end_date) {
-    query = query.lte('date', params.end_date);
+    query = query.lte('date', params.end_date as string);
   }
 
   if (params.min_amount) {
-    query = query.gte('amount', params.min_amount);
+    query = query.gte('amount', params.min_amount as number);
   }
 
   if (params.max_amount) {
-    query = query.lte('amount', params.max_amount);
+    query = query.lte('amount', params.max_amount as number);
   }
 
   if (params.sort_by) {
-    query = query.order(params.sort_by, { ascending: params.sort_order === 'asc' });
+    query = query.order(params.sort_by as string, { ascending: params.sort_order === 'asc' });
   } else {
     query = query.order('date', { ascending: false });
   }
 
   if (params.limit) {
-    query = query.limit(params.limit);
+    query = query.limit(params.limit as number);
   } else {
     query = query.limit(50);
   }
@@ -419,14 +419,14 @@ async function getExpenses(userId: string, params: any, userCurrency: string) {
 }
 
 // Function: Get Budget
-async function getBudget(userId: string, params: any, userCurrency: string) {
+async function getBudget(userId: string, params: Record<string, unknown>, userCurrency: string) {
   let query = supabase
     .from('budgets')
     .select('*')
     .eq('user_id', userId);
 
   if (params.category) {
-    query = query.eq('category', params.category);
+    query = query.eq('category', params.category as string);
   }
 
   const { data: budgets, error } = await query;
@@ -439,7 +439,7 @@ async function getBudget(userId: string, params: any, userCurrency: string) {
     const targetMonth = params.month || new Date().toISOString().slice(0, 7);
     
     // Calculate the last day of the month properly (handles 28, 29, 30, 31 days)
-    const [year, month] = targetMonth.split('-').map(Number);
+    const [year, month] = (targetMonth as string).split('-').map(Number);
     const lastDay = new Date(year, month, 0).getDate(); // Gets last day of the month
     const startDate = `${targetMonth}-01`;
     const endDate = `${targetMonth}-${String(lastDay).padStart(2, '0')}`;
@@ -511,7 +511,7 @@ async function getBudget(userId: string, params: any, userCurrency: string) {
 }
 
 // Function: Create Expense
-async function createExpense(userId: string, params: any, userCurrency: string) {
+async function createExpense(userId: string, params: Record<string, unknown>, userCurrency: string) {
   const { data, error } = await supabase
     .from('expenses')
     .insert({
@@ -535,7 +535,7 @@ async function createExpense(userId: string, params: any, userCurrency: string) 
 }
 
 // Function: Create Budget
-async function createBudget(userId: string, params: any, userCurrency: string) {
+async function createBudget(userId: string, params: Record<string, unknown>, userCurrency: string) {
   const { data, error } = await supabase
     .from('budgets')
     .insert({
@@ -558,8 +558,8 @@ async function createBudget(userId: string, params: any, userCurrency: string) {
 }
 
 // Function: Get Spending Summary
-async function getSpendingSummary(userId: string, params: any, userCurrency: string) {
-  const period = params.period || 'this_month';
+async function getSpendingSummary(userId: string, params: Record<string, unknown>, userCurrency: string) {
+  const period = (params.period as string) || 'this_month';
   const { start_date, end_date } = getPeriodDates(period);
 
   const { data: expenses, error } = await supabase
@@ -572,11 +572,11 @@ async function getSpendingSummary(userId: string, params: any, userCurrency: str
   if (error) throw error;
 
   // Calculate total in user currency
-  const total = expenses?.reduce((sum, e) => {
+      const total = expenses?.reduce((sum, e) => {
     return sum + convertCurrency(e.amount, e.currency || 'USD', userCurrency);
   }, 0) || 0;
 
-  let summary: any = {
+  const summary: Record<string, unknown> = {
     period,
     start_date,
     end_date,
@@ -586,7 +586,7 @@ async function getSpendingSummary(userId: string, params: any, userCurrency: str
   };
 
   if (params.group_by === 'category') {
-    const byCategory = expenses?.reduce((acc: any, e) => {
+    const byCategory = expenses?.reduce((acc: Record<string, { total: number; count: number; currency: string }>, e) => {
       if (!acc[e.category]) {
         acc[e.category] = { total: 0, count: 0, currency: userCurrency };
       }
@@ -632,16 +632,16 @@ async function getSpendingSummary(userId: string, params: any, userCurrency: str
 }
 
 // Function: Search Transactions
-async function searchTransactions(userId: string, params: any, userCurrency: string) {
-  const results: any = { expenses: [], income: [] };
+async function searchTransactions(userId: string, params: Record<string, unknown>, userCurrency: string) {
+  const results: { expenses: unknown[]; income: unknown[] } = { expenses: [], income: [] };
 
   if (params.type !== 'income') {
     const { data: expenses } = await supabase
       .from('expenses')
       .select('*')
       .eq('user_id', userId)
-      .ilike('description', `%${params.query}%`)
-      .limit(params.limit || 20);
+      .ilike('description', `%${params.query ?? ''}%`)
+      .limit(typeof params.limit === 'number' ? params.limit : 20);
 
     // Add converted amount for reference
     results.expenses = expenses?.map(e => ({
@@ -656,8 +656,8 @@ async function searchTransactions(userId: string, params: any, userCurrency: str
       .from('income')
       .select('*')
       .eq('user_id', userId)
-      .ilike('description', `%${params.query}%`)
-      .limit(params.limit || 20);
+      .ilike('description', `%${params.query ?? ''}%`)
+      .limit(typeof params.limit === 'number' ? params.limit : 20);
 
     results.income = income?.map(i => ({
       ...i,
@@ -673,26 +673,26 @@ async function searchTransactions(userId: string, params: any, userCurrency: str
 }
 
 // Function: Get Income
-async function getIncome(userId: string, params: any, userCurrency: string) {
+async function getIncome(userId: string, params: Record<string, unknown>, userCurrency: string) {
   let query = supabase
     .from('income')
     .select('*')
     .eq('user_id', userId);
 
   if (params.source) {
-    query = query.eq('source', params.source);
+    query = query.eq('source', params.source as string);
   }
 
   if (params.start_date) {
-    query = query.gte('date', params.start_date);
+    query = query.gte('date', params.start_date as string);
   }
 
   if (params.end_date) {
-    query = query.lte('date', params.end_date);
+    query = query.lte('date', params.end_date as string);
   }
 
   query = query.order('date', { ascending: false });
-  query = query.limit(params.limit || 50);
+  query = query.limit((params.limit as number) || 50);
 
   const { data, error } = await query;
 
@@ -712,20 +712,20 @@ async function getIncome(userId: string, params: any, userCurrency: string) {
 }
 
 // Function: Get Subscriptions
-async function getSubscriptions(userId: string, params: any, userCurrency: string) {
+async function getSubscriptions(userId: string, params: Record<string, unknown>, userCurrency: string) {
   let query = supabase
     .from('subscriptions')
     .select('*')
     .eq('user_id', userId);
 
   if (params.is_active !== undefined) {
-    query = query.eq('is_active', params.is_active);
+    query = query.eq('is_active', params.is_active as boolean);
   }
 
   if (params.upcoming_days) {
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + params.upcoming_days);
+    futureDate.setDate(today.getDate() + (params.upcoming_days as number));
 
     query = query
       .gte('next_billing_date', today.toISOString().split('T')[0])
@@ -815,7 +815,7 @@ function getPreviousPeriodDates(period: string): { start_date: string; end_date:
 }
 
 // Function: Get Portfolio Summary
-async function getPortfolio(userId: string, params: any, userCurrency: string) {
+async function getPortfolio(userId: string, params: Record<string, unknown>, userCurrency: string) {
   const { data: holdings, error } = await supabase
     .from('holdings')
     .select('*')
@@ -878,18 +878,18 @@ async function getPortfolio(userId: string, params: any, userCurrency: string) {
 }
 
 // Function: Get Holdings
-async function getHoldings(userId: string, params: any, userCurrency: string) {
+async function getHoldings(userId: string, params: Record<string, unknown>, userCurrency: string) {
   let query = supabase
     .from('holdings')
     .select('*')
     .eq('user_id', userId);
 
   if (params.symbol) {
-    query = query.eq('symbol', params.symbol.toUpperCase());
+    query = query.eq('symbol', (params.symbol as string).toUpperCase());
   }
 
   if (params.asset_class) {
-    query = query.eq('asset_class', params.asset_class);
+    query = query.eq('asset_class', params.asset_class as string);
   }
 
   query = query.order('symbol', { ascending: true });
@@ -948,7 +948,7 @@ export class GeminiClient {
     this.apiKey = apiKey;
   }
 
-  async chat(userMessage: string, userId: string, conversationHistory: any[] = [], selectedMonth?: string): Promise<any> {
+  async chat(userMessage: string, userId: string, conversationHistory: Array<{ role: string; parts: Array<{ text?: string; [key: string]: unknown }> }> = [], selectedMonth?: string): Promise<{ text: string; functionCalled?: string | null; functionResult?: Record<string, unknown> }> {
     try {
       const today = new Date();
       const dateString = today.toISOString().split('T')[0];
@@ -1045,14 +1045,14 @@ User: "Check my food budget"
       const candidate = data.candidates[0];
 
       // Check if Gemini wants to call functions (can be multiple)
-      const functionCallParts = candidate.content.parts.filter((part: any) => part.functionCall);
+      const functionCallParts = candidate.content.parts.filter((part: { functionCall?: unknown }) => part.functionCall);
 
       if (functionCallParts.length > 0) {
         console.log(`Gemini wants to call ${functionCallParts.length} functions`);
 
         // Execute all functions in parallel
         const executionResults = await Promise.all(
-          functionCallParts.map(async (part: any) => {
+          functionCallParts.map(async (part: { functionCall: { name: string; args: Record<string, unknown> } }) => {
             const functionCall = part.functionCall;
             const functionName = functionCall.name;
             const functionArgs = functionCall.args;

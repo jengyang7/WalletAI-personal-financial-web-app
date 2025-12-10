@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Home, Plane, GraduationCap, Car, Heart, Target, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Home, Plane, GraduationCap, Car, Heart, Target, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter } from '@/lib/currency';
@@ -61,7 +61,7 @@ export default function Goals() {
     category: 'Housing',
     currency: 'USD'
   });
-  const [userSettings, setUserSettings] = useState<any>(null);
+  const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
   const [deletingGoal, setDeletingGoal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -135,9 +135,10 @@ export default function Goals() {
         currency: userSettings?.currency || 'USD'
       });
       setShowAddGoal(false);
-    } catch (err: any) {
-      console.error('Error adding goal:', err?.message || err);
-      alert(`Failed to add goal: ${err?.message || 'Unknown error'}`);
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      console.error('Error adding goal:', error?.message || err);
+      alert(`Failed to add goal: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -209,7 +210,7 @@ export default function Goals() {
   };
 
   const profileCurrency = userSettings?.currency || 'USD';
-  const formatCurrency = getCurrencyFormatter(profileCurrency);
+  const _formatCurrency = getCurrencyFormatter(profileCurrency);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -529,7 +530,7 @@ export default function Goals() {
                       setEditingGoal({
                         ...editingGoal,
                         current_amount: e.target.value
-                      } as any)
+                      } as Goal)
                     }
                     step="0.01"
                     min="0"
@@ -551,7 +552,7 @@ export default function Goals() {
                       setEditingGoal({
                         ...editingGoal,
                         target_amount: e.target.value
-                      } as any)
+                      } as Goal)
                     }
                     step="0.01"
                     min="0"

@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
         // Calculate last day of the given month
         const yearNum = parseInt(year);
         const monthNum = parseInt(month);
-        const lastDayOfMonth = new Date(yearNum, monthNum, 0); // Day 0 of next month = last day of this month
 
         // Format dates for Yahoo Finance API
         // period1 and period2 are Unix timestamps

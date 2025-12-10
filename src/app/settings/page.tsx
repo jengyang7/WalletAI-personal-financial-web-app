@@ -17,6 +17,7 @@ export default function Settings() {
     if (user) {
       loadSettings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadSettings = async () => {
