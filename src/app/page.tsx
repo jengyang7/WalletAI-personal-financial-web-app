@@ -30,7 +30,7 @@ export default function LandingPage() {
             <LandingHeader />
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16 px-6">
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 md:pt-24 pb-12 md:pb-16 px-4 md:px-6">
                 {/* Animated Background */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-br from-[var(--accent-primary)]/30 to-[var(--accent-success)]/30 rounded-full blur-3xl animate-pulse"></div>
@@ -41,13 +41,13 @@ export default function LandingPage() {
                 {/* Hero Content */}
                 <div className="relative z-10 text-center max-w-5xl mx-auto">
                     {/* Badge */}
-                    <div className="inline-flex items-center space-x-2 glass-card rounded-full px-5 py-2.5 mb-8 animate-slide-in-up">
-                        <Sparkles className="h-4 w-4 text-[var(--accent-warning)]" />
-                        <span className="text-sm font-medium text-[var(--text-primary)]">AI-Powered Personal Finance</span>
+                    <div className="inline-flex items-center space-x-2 glass-card rounded-full px-4 md:px-5 py-2 md:py-2.5 mb-6 md:mb-8 animate-slide-in-up">
+                        <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-[var(--accent-warning)]" />
+                        <span className="text-xs md:text-sm font-medium text-[var(--text-primary)]">AI-Powered Personal Finance</span>
                     </div>
 
                     {/* Headline */}
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-in-up" style={{ animationDelay: '100ms' }}>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 animate-slide-in-up" style={{ animationDelay: '100ms' }}>
                         <span className="text-[var(--text-primary)]">Your Money, </span>
                         <span className="bg-gradient-to-r from-[var(--accent-primary)] via-purple-500 to-[var(--accent-success)] bg-clip-text text-transparent">
                             Smarter
@@ -55,40 +55,40 @@ export default function LandingPage() {
                     </h1>
 
                     {/* Subheadline */}
-                    <p className="text-xl md:text-2xl text-[var(--text-secondary)] mb-10 max-w-3xl mx-auto animate-slide-in-up" style={{ animationDelay: '200ms' }}>
+                    <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-[var(--text-secondary)] mb-6 md:mb-10 max-w-3xl mx-auto px-4 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
                         Meet your AI financial advisor. Track expenses, manage investments, and get personalized insights—all in one beautiful dashboard.
                     </p>
 
                     {/* CTA Buttons */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4 animate-slide-in-up px-4" style={{ animationDelay: '300ms' }}>
                         <Link
                             href="/signup"
-                            className="group px-8 py-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-semibold text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 liquid-button"
+                            className="group px-6 md:px-8 py-3 md:py-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-semibold text-base md:text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 liquid-button w-full sm:w-auto justify-center"
                         >
                             <span>Get Started Free</span>
-                            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
                         </Link>
                         <Link
                             href="/login"
-                            className="px-8 py-4 glass-card text-[var(--text-primary)] font-semibold text-lg rounded-2xl hover:bg-[var(--card-hover)] transition-all duration-300 flex items-center space-x-2"
+                            className="px-6 md:px-8 py-3 md:py-4 glass-card text-[var(--text-primary)] font-semibold text-base md:text-lg rounded-2xl hover:bg-[var(--card-hover)] transition-all duration-300 flex items-center justify-center space-x-2 w-full sm:w-auto"
                         >
                             <span>Login</span>
                         </Link>
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto animate-slide-in-up" style={{ animationDelay: '400ms' }}>
+                    <div className="mt-10 md:mt-16 grid grid-cols-3 gap-4 md:gap-8 max-w-2xl mx-auto animate-slide-in-up px-4" style={{ animationDelay: '400ms' }}>
                         <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">100%</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">Free to Use</p>
+                            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)]">100%</p>
+                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">Free to Use</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">AI</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">Powered</p>
+                            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)]">AI</p>
+                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">Powered</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">24/7</p>
-                            <p className="text-sm text-[var(--text-secondary)] mt-1">Available</p>
+                            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)]">24/7</p>
+                            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-1">Available</p>
                         </div>
                     </div>
                 </div>
@@ -102,24 +102,24 @@ export default function LandingPage() {
             </section>
 
             {/* AI Features Section - Primary Emphasis */}
-            <section id="ai" className="py-24 px-6 relative">
+            <section id="ai" className="py-12 md:py-24 px-4 md:px-6 relative">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-10 md:mb-16">
                         <div className="inline-flex items-center space-x-2 glass-card rounded-full px-5 py-2.5 mb-6 animate-slide-in-up">
                             <Brain className="h-4 w-4 text-[var(--accent-primary)]" />
                             <span className="text-sm font-medium text-[var(--text-primary)]">Artificial Intelligence</span>
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-4 px-4">
                             Your Personal <span className="gradient-text">AI Financial Advisor</span>
                         </h2>
-                        <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
+                        <p className="text-base sm:text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto px-4">
                             Powered by advanced AI, get personalized financial insights, budget recommendations, and investment advice—all just a conversation away.
                         </p>
                     </div>
 
                     {/* AI Feature Cards */}
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12">
                         {/* AI Chat */}
                         <div className="glass-card rounded-3xl p-8 group hover:scale-105 transition-all duration-500">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-blue-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
@@ -188,8 +188,8 @@ export default function LandingPage() {
                     </div>
 
                     {/* AI Demo Preview */}
-                    <div className="glass-card rounded-3xl p-8 md:p-12 bg-gradient-to-br from-[var(--accent-primary)]/10 to-[var(--accent-success)]/10">
-                        <div className="flex flex-col md:flex-row items-center gap-8">
+                    <div className="glass-card rounded-3xl p-6 md:p-8 lg:p-12 bg-gradient-to-br from-[var(--accent-primary)]/10 to-[var(--accent-success)]/10">
+                        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
                             <div className="flex-1">
                                 <h3 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4">
                                     &quot;How can I save more this month?&quot;
@@ -232,20 +232,20 @@ export default function LandingPage() {
             </section>
 
             {/* Other Features Section */}
-            <section id="features" className="py-24 px-6 bg-gradient-to-b from-transparent to-[var(--background-elevated)]/30">
+            <section id="features" className="py-12 md:py-24 px-4 md:px-6 bg-gradient-to-b from-transparent to-[var(--background-elevated)]/30">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
+                    <div className="text-center mb-10 md:mb-16">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-4 px-4">
                             Everything You Need to <span className="gradient-text">Master Your Finances</span>
                         </h2>
-                        <p className="text-xl text-[var(--text-secondary)] max-w-2xl mx-auto">
+                        <p className="text-base sm:text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto px-4">
                             Powerful features designed to give you complete control over your financial life.
                         </p>
                     </div>
 
                     {/* Feature Grid */}
-                    <div className="grid md:grid-cols-2 gap-8">
+                    <div className="grid md:grid-cols-2 gap-6 md:gap-8">
                         {/* Multi-Currency */}
                         <div className="glass-card rounded-3xl p-8 flex items-start space-x-6 group hover:scale-[1.02] transition-all duration-500">
                             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-lg">
@@ -324,7 +324,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Additional Features */}
-                    <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="mt-8 md:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <div className="glass-card rounded-2xl p-6 text-center group hover:scale-105 transition-all duration-300">
                             <Shield className="h-8 w-8 text-[var(--accent-primary)] mx-auto mb-3 group-hover:scale-110 transition-transform" />
                             <p className="font-semibold text-[var(--text-primary)]">Bank-Level Security</p>
@@ -346,9 +346,9 @@ export default function LandingPage() {
             </section>
 
             {/* Product Video Section */}
-            <section id="demo" className="py-24 px-6">
+            <section id="demo" className="py-12 md:py-24 px-4 md:px-6">
                 <div className="max-w-5xl mx-auto">
-                    <div className="text-center mb-12">
+                    <div className="text-center mb-8 md:mb-12">
                         <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
                             See WalletAI in Action
                         </h2>
@@ -388,38 +388,38 @@ export default function LandingPage() {
             </section>
 
             {/* Final CTA Section */}
-            <section className="py-24 px-6 relative overflow-hidden">
+            <section className="py-12 md:py-24 px-4 md:px-6 relative overflow-hidden">
                 {/* Background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] opacity-10"></div>
                 <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--accent-primary)]/30 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--accent-success)]/30 rounded-full blur-3xl"></div>
 
-                <div className="max-w-4xl mx-auto text-center relative z-10">
-                    <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-6">
+                <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[var(--text-primary)] mb-4 md:mb-6">
                         Ready to Transform Your <span className="gradient-text">Financial Life?</span>
                     </h2>
-                    <p className="text-xl text-[var(--text-secondary)] mb-10 max-w-2xl mx-auto">
+                    <p className="text-base sm:text-lg md:text-xl text-[var(--text-secondary)] mb-6 md:mb-10 max-w-2xl mx-auto">
                         Join thousands of users who are already mastering their money with AI-powered insights.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
                         <Link
                             href="/signup"
-                            className="group px-10 py-5 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold text-xl rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center space-x-3 liquid-button"
+                            className="group px-8 md:px-10 py-4 md:py-5 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold text-lg md:text-xl rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center space-x-3 liquid-button w-full sm:w-auto justify-center"
                         >
                             <span>Start for Free</span>
-                            <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform" />
+                            <ArrowRight className="h-5 w-5 md:h-6 md:w-6 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>
-                    <p className="text-sm text-[var(--text-tertiary)] mt-6">
+                    <p className="text-xs sm:text-sm text-[var(--text-tertiary)] mt-4 md:mt-6">
                         No credit card required • Free forever for personal use
                     </p>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="py-12 px-6 border-t border-[var(--glass-border)]">
+            <footer className="py-8 md:py-12 px-4 md:px-6 border-t border-[var(--glass-border)]">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6">
                         {/* Logo */}
                         <div className="flex items-center space-x-3">
                             <div className="bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-2 rounded-xl">
@@ -429,20 +429,20 @@ export default function LandingPage() {
                         </div>
 
                         {/* Links */}
-                        <div className="flex items-center space-x-8">
-                            <a href="#features" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">
+                        <div className="flex items-center space-x-4 md:space-x-8">
+                            <a href="#features" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xs md:text-sm">
                                 Features
                             </a>
-                            <a href="#ai" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">
+                            <a href="#ai" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xs md:text-sm">
                                 AI Advisor
                             </a>
-                            <a href="#demo" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">
+                            <a href="#demo" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xs md:text-sm">
                                 Demo
                             </a>
                         </div>
 
                         {/* Copyright */}
-                        <p className="text-[var(--text-tertiary)] text-sm">
+                        <p className="text-[var(--text-tertiary)] text-xs md:text-sm">
                             © {new Date().getFullYear()} WalletAI. Made with ❤️
                         </p>
                     </div>

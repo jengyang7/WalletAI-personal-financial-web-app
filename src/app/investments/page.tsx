@@ -651,15 +651,15 @@ export default function Investments() {
   }
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex animate-slide-in-up items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Investments</h1>
-          <p className="text-[var(--text-secondary)]">Track your stock portfolio with real-time prices</p>
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-in-up">
+        <div className="pl-16 lg:pl-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Investments</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">Track your stock portfolio with real-time prices</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <label htmlFor="currency-select" className="text-[var(--text-secondary)] text-sm">Display Currency:</label>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <label htmlFor="currency-select" className="text-[var(--text-secondary)] text-xs sm:text-sm">Display Currency:</label>
           <select
             id="currency-select"
             value={displayCurrency}
@@ -676,8 +676,8 @@ export default function Investments() {
       </div>
 
       {/* Portfolio Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="glass-card rounded-2xl p-6 animate-scale-in">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
           <h3 className="text-[var(--text-secondary)] text-sm font-medium mb-2">Total Value</h3>
           <p className="text-2xl font-bold text-[var(--text-primary)]">
             {formatCurrency(portfolioStats.totalValue)}
@@ -715,10 +715,10 @@ export default function Investments() {
 
       {/* Portfolio Allocation + Performance (1:2 layout) */}
       {holdings.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
           {/* Portfolio Allocation - 1/3 width */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in xl:col-span-1">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Portfolio Allocation</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in xl:col-span-1">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Portfolio Allocation</h2>
             <div className="flex flex-col items-center">
               <div className="w-56 h-56">
                 <ResponsiveContainer width="100%" height="100%">
@@ -784,9 +784,9 @@ export default function Investments() {
           </div>
 
           {/* Portfolio Performance - 2/3 width */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in xl:col-span-2">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Portfolio Performance (Last 12 Months)</h2>
-            <div className="h-64">
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in xl:col-span-2">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Portfolio Performance (Last 12 Months)</h2>
+            <div className="h-48 sm:h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={portfolioPerformance}>
                   <XAxis
@@ -827,18 +827,18 @@ export default function Investments() {
       )}
 
       {/* Holdings Table */}
-      <div className="glass-card rounded-2xl p-6 animate-scale-in">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Holdings</h2>
+      <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
+        <div className="flex items-center justify-between mb-4 md:mb-6">
+          <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Holdings</h2>
         </div>
 
         {holdings.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[var(--text-secondary)]">No holdings yet. Add your first stock to get started!</p>
+          <div className="text-center py-8 md:py-12">
+            <p className="text-sm md:text-base text-[var(--text-secondary)]">No holdings yet. Add your first stock to get started!</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-700">
                   <th className="text-left text-[var(--text-secondary)] font-medium pb-3">Symbol</th>
@@ -917,18 +917,19 @@ export default function Investments() {
 
       {/* Transaction History Section */}
       {holdings.length > 0 && (
-        <div className="glass-card rounded-2xl p-6 mt-6 animate-scale-in">
-          <div className="flex items-center justify-between mb-6">
+        <div className="glass-card rounded-2xl p-4 md:p-6 mt-4 md:mt-6 animate-scale-in">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center">
               <History className="h-5 w-5 mr-2 text-[var(--accent-primary)]" />
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Transaction History</h2>
             </div>
             <button
               onClick={() => setShowAddHolding(true)}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-3 md:px-4 rounded-lg transition-colors flex items-center whitespace-nowrap"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Transaction
+              <Plus className="h-4 w-4 mr-1 md:mr-2" />
+              <span className="md:hidden">Add</span>
+              <span className="hidden md:inline">Add Transaction</span>
             </button>
           </div>
 

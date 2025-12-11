@@ -86,16 +86,16 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 animate-slide-in-up">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Settings</h1>
-        <p className="text-[var(--text-secondary)]">Manage your profile and preferences</p>
+      <div className="mb-6 md:mb-8 animate-slide-in-up pl-16 lg:pl-0">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Settings</h1>
+        <p className="text-sm md:text-base text-[var(--text-secondary)]">Manage your profile and preferences</p>
       </div>
 
       <div className="max-w-2xl">
         {/* Profile Section */}
-        <div className="glass-card rounded-2xl p-6 animate-scale-in mb-6">
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in mb-4 md:mb-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6 flex items-center">
             <User className="h-5 w-5 mr-2" />
             Profile Information
@@ -136,7 +136,7 @@ export default function Settings() {
         </div>
 
         {/* Preferences Section */}
-        <div className="glass-card rounded-2xl p-6 animate-scale-in mb-6">
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in mb-4 md:mb-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6 flex items-center">
             <Globe className="h-5 w-5 mr-2" />
             Preferences
@@ -175,9 +175,9 @@ export default function Settings() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 disabled:cursor-not-allowed text-[var(--text-primary)] font-medium py-2 px-6 rounded-lg transition-colors flex items-center"
+            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-lg transition-colors flex items-center"
           >
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 mr-2 text-white" />
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>

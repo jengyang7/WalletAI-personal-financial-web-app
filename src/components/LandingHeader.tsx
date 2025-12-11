@@ -23,8 +23,8 @@ export default function LandingHeader() {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50">
-            <div className="mx-4 mt-4">
-                <nav className="glass rounded-2xl px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+            <div className="mx-2 md:mx-4 mt-2 md:mt-4">
+                <nav className="glass rounded-2xl px-4 md:px-6 py-3 md:py-4 flex items-center justify-between max-w-7xl mx-auto">
                     {/* Logo */}
                     <Link href="/" className="flex items-center space-x-3 group">
                         <div className="relative">

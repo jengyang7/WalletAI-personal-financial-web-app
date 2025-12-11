@@ -94,14 +94,14 @@ export default function Signup() {
     }
 
     return (
-        <div className="min-h-screen bg-[var(--background)] transition-colors duration-300 flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="min-h-screen bg-[var(--background)] transition-colors duration-300 flex items-center justify-center p-4 md:p-6 relative overflow-hidden">
             {/* Background Effects */}
             <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-[var(--accent-primary)]/20 to-[var(--accent-success)]/20 rounded-full blur-3xl animate-pulse"></div>
             <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-purple-500/20 to-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-            <div className="w-full max-w-md relative z-10 animate-scale-in">
+            <div className="w-full max-w-md relative z-10 animate-scale-in px-4 sm:px-0">
                 {/* Logo */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6 md:mb-8">
                     <div className="flex items-center justify-center mb-4">
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] blur-xl opacity-50 rounded-full"></div>
@@ -110,21 +110,21 @@ export default function Signup() {
                             </div>
                         </div>
                     </div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
-                    <p className="text-[var(--text-secondary)] mt-2">Create your free account</p>
+                    <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
+                    <p className="text-sm md:text-base text-[var(--text-secondary)] mt-2">Create your free account</p>
                 </div>
 
                 {/* Signup Form */}
-                <div className="glass-card rounded-2xl p-8 shadow-2xl">
-                    <h2 className="text-2xl font-semibold text-[var(--text-primary)] mb-6">Get Started</h2>
+                <div className="glass-card rounded-2xl p-6 md:p-8 shadow-2xl">
+                    <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] mb-6">Get Started</h2>
 
                     {error && (
-                        <div className="bg-[var(--accent-error)]/10 border border-[var(--accent-error)]/30 rounded-xl p-3 mb-6 animate-slide-in-up">
-                            <p className="text-[var(--accent-error)] text-sm">{error}</p>
+                        <div className="bg-[var(--accent-error)]/10 border border-[var(--accent-error)]/30 rounded-xl p-3 mb-4 md:mb-6 animate-slide-in-up">
+                            <p className="text-[var(--accent-error)] text-xs md:text-sm">{error}</p>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                         <div>
                             <label htmlFor="displayName" className="block text-sm font-medium text-[var(--text-primary)] mb-2">
                                 Display Name

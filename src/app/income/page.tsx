@@ -269,12 +269,12 @@ export default function IncomePage() {
   }
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex animate-slide-in-up items-center justify-between animate-slide-in-up">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Income</h1>
-          <p className="text-[var(--text-secondary)]">Track all your income sources</p>
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-in-up">
+        <div className="pl-16 lg:pl-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Income</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">Track all your income sources</p>
         </div>
         <MonthSelector
           selectedMonth={selectedMonth}
@@ -283,11 +283,11 @@ export default function IncomePage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column - Total Income Card and Add Form */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
           {/* Total Income Card */}
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 md:p-6 text-white">
             <div className="flex items-center mb-2">
               <DollarSign className="h-6 w-6 mr-2" />
               <h3 className="text-lg font-semibold">
@@ -304,8 +304,8 @@ export default function IncomePage() {
           </div>
 
           {/* Add New Income Form */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Income</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Income</h2>
             
             <form onSubmit={handleAddIncome} className="space-y-4">
               <div>
@@ -403,8 +403,8 @@ export default function IncomePage() {
 
         {/* Income List Grouped by Month/Day */}
         <div className="lg:col-span-2">
-          <div className="glass-card rounded-2xl p-6 animate-scale-in">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Income History</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Income History</h2>
             
             {income.length === 0 ? (
               <div className="text-center py-12">

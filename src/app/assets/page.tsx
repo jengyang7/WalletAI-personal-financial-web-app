@@ -304,18 +304,18 @@ export default function AssetsPage() {
   }
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 animate-slide-in-up">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Assets</h1>
-        <p className="text-[var(--text-secondary)]">Track all your assets and net worth</p>
+      <div className="mb-6 md:mb-8 animate-slide-in-up pl-16 lg:pl-0">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Assets</h1>
+        <p className="text-sm md:text-base text-[var(--text-secondary)]">Track all your assets and net worth</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column - Total Net Worth Card and Add Form */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
           {/* Total Assets Card */}
-          <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-2xl animate-scale-in">
+          <div className="rounded-2xl p-4 md:p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-2xl animate-scale-in">
             <div className="flex items-center mb-2">
               <TrendingUp className="h-6 w-6 mr-2" />
               <h3 className="text-lg font-semibold">Total Net Worth</h3>
@@ -329,8 +329,8 @@ export default function AssetsPage() {
           </div>
 
           {/* Add New Asset Form */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '100ms' }}>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Asset</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in" style={{ animationDelay: '100ms' }}>
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Asset</h2>
 
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
@@ -460,7 +460,7 @@ export default function AssetsPage() {
         <div className="lg:col-span-2">
           {/* Portfolio Summary (Synced from Investments) */}
           {totalPortfolioValue > 0 && (
-            <div className="glass-card rounded-2xl p-6 mb-6 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
+            <div className="glass-card rounded-2xl p-4 md:p-6 mb-4 md:mb-6 animate-slide-in-up" style={{ animationDelay: '200ms' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Investment Portfolio</h2>
@@ -481,8 +481,8 @@ export default function AssetsPage() {
             </div>
           )}
 
-          <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Your Assets</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Your Assets</h2>
 
             {assets.length === 0 ? (
               <div className="text-center py-12">
@@ -559,7 +559,7 @@ export default function AssetsPage() {
       </div>
 
       {/* Month-End Savings Transfer History */}
-      <div className="mt-8 glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '400ms' }}>
+      <div className="mt-6 md:mt-8 glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up" style={{ animationDelay: '400ms' }}>
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <History className="h-5 w-5 mr-2 text-[var(--accent-primary)]" />

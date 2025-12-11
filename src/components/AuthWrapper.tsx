@@ -62,20 +62,21 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
             {!isAssistantOpen && (
               <button
                 onClick={() => setIsAssistantOpen(true)}
-                className="fixed bottom-8 right-8 text-white px-6 py-4 rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-2 font-semibold z-40 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)]"
+                className="fixed bottom-6 right-6 md:bottom-8 md:right-8 text-white px-4 py-3 md:px-6 md:py-4 rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-2 font-semibold z-40 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] text-sm md:text-base"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                AI Assistant
+                <span className="hidden sm:inline">AI Assistant</span>
+                <span className="sm:hidden">AI</span>
               </button>
             )}
 
-            {/* Floating AI Assistant Popup - Right Side */}
+            {/* Floating AI Assistant Popup - Responsive */}
             {isAssistantOpen && (
-              <div className="fixed top-32 right-8 bottom-8 z-50 pointer-events-none">
+              <div className="fixed inset-4 md:top-32 md:right-8 md:bottom-8 md:left-auto z-50 pointer-events-none">
                 <div 
-                  className="w-[600px] h-full rounded-3xl shadow-2xl animate-slide-in-right pointer-events-auto flex flex-col"
+                  className="w-full md:w-[600px] h-full rounded-3xl shadow-2xl animate-slide-in-right pointer-events-auto flex flex-col"
                 >
                   <AIAdvisor onClose={() => setIsAssistantOpen(false)} />
                 </div>

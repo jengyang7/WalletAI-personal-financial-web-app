@@ -425,10 +425,10 @@ export default function Expenses() {
   };
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex animate-slide-in-up items-center justify-between">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Expenses</h1>
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-in-up">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] pl-16 lg:pl-0">Expenses</h1>
         <MonthSelector
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
@@ -436,11 +436,11 @@ export default function Expenses() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column - Total Expenses Card, Add Form, and Subscriptions */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-4 md:space-y-6">
           {/* Total Expenses Card */}
-          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-6 text-white">
+          <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-4 md:p-6 text-white">
             <div className="flex items-center mb-2">
               <CreditCard className="h-6 w-6 mr-2" />
               <h3 className="text-lg font-semibold">
@@ -457,8 +457,8 @@ export default function Expenses() {
           </div>
 
           {/* Add New Expense Form */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Add New Expense</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Expense</h2>
             
             <form onSubmit={handleAddExpense} className="space-y-4">
               <div>
@@ -556,9 +556,9 @@ export default function Expenses() {
           </div>
 
           {/* Subscriptions Section */}
-          <div className="glass-card rounded-2xl p-6 animate-scale-in">
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h2>
+              <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h2>
               <button
                 onClick={() => setShowSubscriptionModal(true)}
                 className="bg-purple-600 hover:bg-purple-700 text-[var(--text-primary)] text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center text-white"
@@ -609,8 +609,8 @@ export default function Expenses() {
 
         {/* Expenses List Grouped by Month/Day */}
         <div className="lg:col-span-2">
-          <div className="glass-card rounded-2xl p-6 animate-scale-in">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Expenses</h2>
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Expenses</h2>
             
             {expenses.length === 0 ? (
               <div className="text-center py-12">

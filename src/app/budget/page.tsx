@@ -171,12 +171,12 @@ export default function Budget() {
   };
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-4 flex animate-slide-in-up flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Budgets</h1>
-          <p className="text-[var(--text-secondary)]">Manage your spending with personalized budgets.</p>
+      <div className="mb-4 md:mb-6 flex animate-slide-in-up flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="pl-16 lg:pl-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Budgets</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">Manage your spending with personalized budgets.</p>
         </div>
         <MonthSelector
           selectedMonth={selectedMonth}
@@ -186,7 +186,7 @@ export default function Budget() {
       </div>
 
       {/* Add Button Row */}
-      <div className="mb-8 flex justify-end animate-slide-in-up">
+      <div className="mb-6 md:mb-8 flex justify-end animate-slide-in-up">
         <button
           onClick={() => setShowAddBudget(true)}
           className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center"

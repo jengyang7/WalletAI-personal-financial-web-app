@@ -826,12 +826,12 @@ export default function Dashboard() {
 
 
   return (
-    <div className="p-6 min-h-screen bg-[var(--background)] transition-colors duration-300">
+    <div className="p-4 md:p-6 min-h-screen bg-[var(--background)] transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 flex items-center justify-between animate-slide-in-up">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Dashboard</h1>
-          <p className="text-[var(--text-secondary)]">Welcome back, {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}</p>
+      <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-in-up">
+        <div className="pl-16 lg:pl-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Dashboard</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">Welcome back, {user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'User'}</p>
         </div>
 
         {/* Month Selector */}
@@ -842,9 +842,9 @@ export default function Dashboard() {
       </div>
 
       {/* Main Layout */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         {/* Row 1: Summary Cards (Full Width) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
             <Link href="/income" className="glass-card rounded-2xl p-6 cursor-pointer group animate-scale-in h-[160px] flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-[var(--text-secondary)] text-lg font-semibold">Income</h3>
@@ -931,13 +931,13 @@ export default function Dashboard() {
         </div>
 
         {/* Row 2 & 3: Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 mb-4 md:mb-6">
           {/* Spending Chart - Row 2, Column 1 */}
           <div className="lg:col-span-4">
           {/* Monthly Spending Chart */}
-          <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Last 12 Month Spending</h3>
-              <div className="h-64">
+          <div className="glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up" style={{ animationDelay: '300ms' }}>
+              <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Last 12 Month Spending</h3>
+              <div className="h-48 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlySpendingData}>
                     <XAxis
@@ -974,9 +974,9 @@ export default function Dashboard() {
 
           {/* Spending by Category - Row 2, Column 2 */}
           <div className="lg:col-span-4">
-            <div className="glass-card rounded-2xl p-6 animate-slide-in-up h-full" style={{ animationDelay: '400ms' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+            <div className="glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up h-full" style={{ animationDelay: '400ms' }}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-0 mb-4 md:mb-6">
+                <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">
                   Expenses Category
                 </h3>
                 <div className="flex space-x-2">
@@ -1001,8 +1001,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="w-48 h-48">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="w-40 h-40 sm:w-48 sm:h-48">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1045,7 +1045,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </div>
 
-                <div className="flex-1 ml-8">
+                <div className="flex-1 w-full md:ml-8">
                   {spendingByCategory.categories.length === 0 ? (
                     <p className="text-[var(--text-secondary)] text-sm">No expenses yet. Add some expenses to see your spending breakdown.</p>
                   ) : (
@@ -1073,7 +1073,7 @@ export default function Dashboard() {
           {/* AI Insights - Row 2-3, Column 3 (Spans 2 Rows) */}
           {aiInsights.length > 0 && (
             <div className="lg:col-span-4 lg:row-span-2">
-              <div className="glass-card rounded-2xl p-6 flex flex-col h-full animate-slide-in-up" style={{ animationDelay: '500ms' }}>
+              <div className="glass-card rounded-2xl p-4 md:p-6 flex flex-col h-full animate-slide-in-up" style={{ animationDelay: '500ms' }}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center">
                   <Sparkles className="h-5 w-5 text-purple-500 mr-2" />
@@ -1178,9 +1178,9 @@ export default function Dashboard() {
 
           {/* Cashflow Chart - Row 3, Columns 1-2 */}
           <div className="lg:col-span-8">
-            <div className="glass-card rounded-2xl p-6 animate-slide-in-up" style={{ animationDelay: '600ms' }}>
-        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Cashflow (Income vs. Expenses)</h3>
-        <div className="h-64">
+            <div className="glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up" style={{ animationDelay: '600ms' }}>
+        <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Cashflow (Income vs. Expenses)</h3>
+        <div className="h-48 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={cashflowData}>
               <XAxis
@@ -1213,10 +1213,10 @@ export default function Dashboard() {
         </div>
 
         {/* Row 4: Bottom 3 Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Savings Rate Gauge */}
-        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '700ms' }}>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Savings Rate</h3>
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in" style={{ animationDelay: '700ms' }}>
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Savings Rate</h3>
           <div className="flex flex-col items-center justify-center py-8">
             <div className="relative w-48 h-48">
               <svg
@@ -1273,9 +1273,9 @@ export default function Dashboard() {
         </div>
 
         {/* Subscriptions */}
-        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '800ms' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h3>
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in" style={{ animationDelay: '800ms' }}>
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Subscriptions</h3>
             <Link
               href="/expenses"
               className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] text-sm transition-colors font-medium"
@@ -1353,9 +1353,9 @@ export default function Dashboard() {
         </div>
 
         {/* Net Worth Trend */}
-        <div className="glass-card rounded-2xl p-6 animate-scale-in" style={{ animationDelay: '900ms' }}>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6">Net Worth Trend (12 Months)</h3>
-          <div className="h-64">
+        <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in" style={{ animationDelay: '900ms' }}>
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Net Worth Trend (12 Months)</h3>
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={netWorthTrend}>
                 <XAxis

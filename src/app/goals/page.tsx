@@ -221,18 +221,18 @@ export default function Goals() {
   };
 
   return (
-    <div className="p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
+    <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
-      <div className="mb-8 animate-slide-in-up">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">Financial Goals</h1>
-        <p className="text-[var(--text-secondary)]">
+      <div className="mb-6 md:mb-8 animate-slide-in-up pl-16 lg:pl-0">
+        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Financial Goals</h1>
+        <p className="text-sm md:text-base text-[var(--text-secondary)]">
           Set and track your financial aspirations by saving into dedicated pockets.
         </p>
       </div>
 
       <div>
         {/* Tab Navigation */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex space-x-1 glass-card border border-[var(--card-border)] p-1 rounded-2xl w-fit shadow-sm">
             {['Active Goals', 'Completed Goals'].map((tab) => (
               <button
@@ -270,14 +270,14 @@ export default function Goals() {
                 onClick={() => setEditingGoal(goal)}
                 className="glass-card rounded-2xl overflow-hidden border border-[var(--card-border)] shadow-md cursor-pointer hover:bg-[var(--card-hover)] transition-all duration-300"
               >
-                <div className="flex">
+                <div className="flex flex-col sm:flex-row">
                   {/* Goal Image */}
-                  <div className="w-48 h-48 relative bg-[var(--card-border)]/30 flex items-center justify-center">
-                    <IconComponent className="h-16 w-16 text-[var(--accent-primary)]" />
+                  <div className="w-full sm:w-48 h-32 sm:h-48 relative bg-[var(--card-border)]/30 flex items-center justify-center">
+                    <IconComponent className="h-12 sm:h-16 w-12 sm:w-16 text-[var(--accent-primary)]" />
                   </div>
 
                   {/* Goal Details */}
-                  <div className="flex-1 p-6">
+                  <div className="flex-1 p-4 md:p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 mr-4">
                         <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{goal.title}</h3>
