@@ -147,7 +147,7 @@ const functions = [
   },
   {
     name: 'get_spending_summary',
-    description: 'Get aggregated spending summary with totals by category, time period, or overall. Can return data in a specific currency.',
+    description: 'Get detailed spending analysis with breakdown by category and comparison with previous period. ALWAYS use group_by: "category" and include_comparison: true to provide comprehensive insights. Can return data in a specific currency.',
     parameters: {
       type: 'object',
       properties: {
@@ -991,6 +991,35 @@ When users ask about their finances, use the available functions to retrieve and
 Be conversational, friendly, and provide actionable advice.
 Always format currency amounts clearly and provide context for numbers.
 When presenting budget information, use the user's default currency (${userCurrency}).
+
+SPENDING ANALYSIS GUIDELINES:
+When users ask for spending summaries or analysis:
+1. ALWAYS call get_spending_summary with group_by: "category" and include_comparison: true
+2. Provide a comprehensive analysis including:
+   - Total spending amount
+   - Top spending categories with amounts and percentages
+   - Comparison with previous period (increase/decrease)
+   - Insights about spending patterns
+   - Actionable recommendations
+3. Format the response with clear structure using bullet points or numbered lists
+4. Highlight any unusual spending patterns or categories that exceed expectations
+5. Be specific with numbers and percentages, not just general statements
+
+Example response format:
+"Here's your spending analysis for [period]:
+
+💰 **Total Spending**: [amount] [currency]
+
+📊 **Top Categories**:
+• [Category 1]: [amount] ([percentage]%)
+• [Category 2]: [amount] ([percentage]%)
+• [Category 3]: [amount] ([percentage]%)
+
+📈 **Trends**:
+• [Comparison with previous period]
+• [Any notable changes]
+
+💡 **Insights**: [Provide actionable advice based on the data]"
 
 INVESTMENT CAPABILITIES:
 - You can access the user's investment portfolio using get_portfolio function

@@ -13,10 +13,8 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  // Draggable width for the WalletAI assistant panel (must be outside conditionals for hooks order)
-  const [assistantWidth, setAssistantWidth] = useState<number>(384); // default ~ w-96
-  const [isResizing, setIsResizing] = useState(false);
-  const layoutRef = useRef<HTMLDivElement | null>(null);
+  // Floating AI Assistant state
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const isPublicRoute = publicRoutes.includes(pathname);
 
@@ -31,46 +29,6 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
       }
     }
   }, [user, loading, isPublicRoute, pathname, router]);
-
-  // Handle dragging to resize the assistant panel
-  useEffect(() => {
-    if (!isResizing) return;
-
-    // Disable text selection while resizing
-    const previousUserSelect = document.body.style.userSelect;
-    document.body.style.userSelect = 'none';
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!layoutRef.current) return;
-      const rect = layoutRef.current.getBoundingClientRect();
-      const newWidth = rect.right - e.clientX;
-
-      const minWidth = 384; // lock minimum width to original size (w-96)
-      const maxWidth = 640;
-      const clampedWidth = Math.min(Math.max(newWidth, minWidth), maxWidth);
-
-      setAssistantWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      document.body.style.userSelect = previousUserSelect;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.userSelect = previousUserSelect;
-    };
-  }, [isResizing, layoutRef]);
-
-  const handleResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
 
   // Show loading spinner
   if (loading) {
@@ -95,20 +53,35 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   if (user) {
     return (
       <FinanceProvider>
-        <div className="flex h-screen" ref={layoutRef}>
+        <div className="flex h-screen">
           <Sidebar />
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto relative">
             {children}
+            
+            {/* Floating AI Assistant Button - Only show when popup is closed */}
+            {!isAssistantOpen && (
+              <button
+                onClick={() => setIsAssistantOpen(true)}
+                className="fixed bottom-8 right-8 text-white px-6 py-4 rounded-full shadow-2xl hover:shadow-blue-500/50 hover:scale-105 transition-all duration-300 flex items-center gap-2 font-semibold z-40 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)]"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                AI Assistant
+              </button>
+            )}
+
+            {/* Floating AI Assistant Popup - Right Side */}
+            {isAssistantOpen && (
+              <div className="fixed top-32 right-8 bottom-8 z-50 pointer-events-none">
+                <div 
+                  className="w-[600px] h-full rounded-3xl shadow-2xl animate-slide-in-right pointer-events-auto flex flex-col"
+                >
+                  <AIAdvisor onClose={() => setIsAssistantOpen(false)} />
+                </div>
+              </div>
+            )}
           </main>
-          {/* Drag handle between main content and WalletAI assistant */}
-          <div
-            className={`w-1 cursor-col-resize bg-[var(--background)] border-l border-[var(--glass-border)] hover:bg-[var(--card-hover)] transition-colors select-none ${isResizing ? 'bg-[var(--card-hover)]' : ''
-              }`}
-            onMouseDown={handleResizeMouseDown}
-          />
-          <div className="shrink-0" style={{ width: assistantWidth }}>
-            <AIAdvisor />
-          </div>
         </div>
       </FinanceProvider>
     );

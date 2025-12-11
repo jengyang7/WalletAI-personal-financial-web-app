@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, Sparkles, TrendingUp, Trash2, MoreHorizontal, Zap } from 'lucide-react';
+import { Bot, Send, Sparkles, TrendingUp, Trash2, Zap } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
@@ -44,7 +44,11 @@ const quickActions = [
   }
 ];
 
-export default function AIAdvisor() {
+interface AIAdvisorProps {
+  onClose?: () => void;
+}
+
+export default function AIAdvisor({ onClose }: AIAdvisorProps = {}) {
   const { reloadBudgets } = useFinance();
   const { user } = useAuth();
   const { selectedMonth } = useMonth();
@@ -86,7 +90,7 @@ export default function AIAdvisor() {
       setMessages([
         {
           id: '1',
-          text: `Hello ${getUserName()}! 👋 I'm your AI financial assistant. \n\nI can help you track expenses, analyze spending, and manage budgets. Try asking: "What did I spend on groceries?"`,
+          text: `Hello ${getUserName()}! 👋 I'm your AI financial assistant powered by Gemini.\n\n**Here's what I can help you with:**\n\n💰 **Spending Analysis** - View your spending patterns and trends\n📊 **Budget Tracking** - Check your budget status and get alerts\n📝 **Expense Management** - Add, update, or review expenses\n🎯 **Financial Goals** - Track progress toward your goals\n💳 **Recent Transactions** - See your latest expenses\n💡 **Smart Insights** - Get personalized financial advice\n\nTry asking: "Show me my spending summary" or "How am I doing with my budgets?"`,
           sender: 'ai',
           timestamp: new Date()
         }
@@ -128,7 +132,7 @@ export default function AIAdvisor() {
       localStorage.removeItem(getStorageKey('ai_conversation_history'));
       setMessages([{
         id: Date.now().toString(),
-        text: `Chat cleared! How can I help you, ${getUserName()}?`,
+        text: `Hello ${getUserName()}! 👋 I'm your AI financial assistant powered by Gemini.\n\n**Here's what I can help you with:**\n\n💰 **Spending Analysis** - View your spending patterns and trends\n📊 **Budget Tracking** - Check your budget status and get alerts\n📝 **Expense Management** - Add, update, or review expenses\n🎯 **Financial Goals** - Track progress toward your goals\n💳 **Recent Transactions** - See your latest expenses\n💡 **Smart Insights** - Get personalized financial advice\n\nTry asking: "Show me my spending summary" or "How am I doing with my budgets?"`,
         sender: 'ai',
         timestamp: new Date()
       }]);
@@ -248,13 +252,13 @@ export default function AIAdvisor() {
   };
 
   return (
-    <div className="glass backdrop-blur-[60px] border-l border-[var(--glass-border)] flex flex-col h-screen shadow-2xl relative overflow-hidden transition-all duration-300">
+    <div className="glass backdrop-blur-[60px] border border-[var(--glass-border)] flex flex-col h-full shadow-2xl relative overflow-hidden transition-all duration-300 rounded-3xl">
       {/* Background Glow Effects */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-3xl pointer-events-none animate-pulse" style={{ animationDelay: '1s' }} />
 
       {/* Header */}
-      <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--card-bg)] backdrop-blur-sm z-10">
+      <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--card-bg)] backdrop-blur-sm z-10 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="relative">
@@ -265,28 +269,34 @@ export default function AIAdvisor() {
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[var(--accent-success)] border-2 border-[var(--background)] rounded-full animate-pulse"></div>
             </div>
             <div className="ml-3">
-              <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">WalletAI Assistant</h2>
-              <p className="text-[9px] text-[var(--text-tertiary)] mt-0.5">Powered by Gemini</p>
+              <h2 className="text-s font-bold text-[var(--text-primary)] tracking-wide whitespace-nowrap">WalletAI Assistant</h2>
+              <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5">Powered by Gemini</p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 ml-4">
             <button
               onClick={handleClearChat}
-              className="text-[var(--text-secondary)] hover:text-[var(--accent-error)] p-1.5 hover:bg-[var(--sidebar-hover)] rounded-lg transition-all duration-300 liquid-button"
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--sidebar-hover)] p-2 rounded-lg transition-all duration-300 liquid-button"
               title="Clear Chat History"
             >
               <Trash2 className="h-4 w-4" />
             </button>
-            <button className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1.5 hover:bg-[var(--sidebar-hover)] rounded-lg transition-all duration-300 liquid-button">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--sidebar-hover)] px-2 py-2 rounded-lg transition-all duration-300 liquid-button font-medium text-sm"
+                title="Hide"
+              >
+                —
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="p-4 pb-2 z-10">
+      <div className="p-4 pb-2 z-10 flex-shrink-0">
         <div className="flex space-x-2 overflow-x-auto pb-2">
           {quickActions.map((action, index) => (
             <button
@@ -366,7 +376,7 @@ export default function AIAdvisor() {
       </div>
 
       {/* Chat Input */}
-      <div className="p-4 bg-[var(--card-bg)] backdrop-blur-md border-t border-[var(--glass-border)] z-10">
+      <div className="p-4 bg-[var(--card-bg)] backdrop-blur-md border-t border-[var(--glass-border)] z-10 flex-shrink-0">
         <div className="flex items-center space-x-2 group">
           <input
             type="text"
