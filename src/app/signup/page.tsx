@@ -110,7 +110,7 @@ export default function Signup() {
                             </div>
                         </div>
                     </div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">FinAI</h1>
+                    <h1 className="text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
                     <p className="text-[var(--text-secondary)] mt-2">Create your free account</p>
                 </div>
 

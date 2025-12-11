@@ -265,7 +265,8 @@ export default function AIAdvisor() {
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[var(--accent-success)] border-2 border-[var(--background)] rounded-full animate-pulse"></div>
             </div>
             <div className="ml-3">
-              <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">FinAI Assistant</h2>
+              <h2 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">WalletAI Assistant</h2>
+              <p className="text-[9px] text-[var(--text-tertiary)] mt-0.5">Powered by Gemini</p>
             </div>
           </div>
 
@@ -330,32 +331,6 @@ export default function AIAdvisor() {
               <div className={`leading-relaxed ${msg.sender === 'ai' ? 'text-white font-medium' : ''}`}>
                 {msg.text ? formatMessage(msg.text) : <span className={msg.sender === 'user' ? 'text-[var(--text-tertiary)]' : 'text-white/70'}>Loading response...</span>}
               </div>
-
-              {/* Function Call Result (kept for functionality, styled to match) */}
-              {msg.functionCalled && (
-                <div className={`mt-3 pt-3 border-t ${msg.sender === 'ai' ? 'border-[var(--text-tertiary)]' : 'border-white/20'}`}>
-                  <div className="flex items-center text-[10px] uppercase tracking-wider mb-1 text-white/70">
-                    <Zap className="h-3 w-3 mr-1 text-yellow-300" />
-                    Action Executed
-                  </div>
-                  <div className="rounded-md p-2 text-xs font-mono bg-white/10 text-white/80">
-                    {msg.functionCalled}
-                    {msg.functionResult && (
-                      <span className="ml-2 text-white/70">
-                        {msg.functionResult.success ? '✓' : '•'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Timestamp */}
-              <div className={`
-                text-[10px] mt-1 text-right opacity-60
-                ${msg.sender === 'user' ? 'text-white/80' : 'text-[var(--text-tertiary)]'}
-              `}>
-                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </div>
             </div>
 
             {/* User Avatar (Right) */}
@@ -397,7 +372,7 @@ export default function AIAdvisor() {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask FinAI anything..."
+            placeholder="Ask WalletAI anything..."
             className="flex-1 glass-card border border-[var(--card-border)] rounded-2xl px-4 py-3.5 text-[var(--text-primary)] text-sm placeholder-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 transition-all shadow-lg"
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
           />

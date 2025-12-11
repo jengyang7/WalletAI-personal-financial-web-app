@@ -34,7 +34,7 @@ export default function LandingHeader() {
                             </div>
                         </div>
                         <span className="text-2xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">
-                            FinAI
+                            WalletAI
                         </span>
                     </Link>
 

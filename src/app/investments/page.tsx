@@ -381,12 +381,14 @@ export default function Investments() {
       return;
     }
 
-    // Update local state
-    setHoldings(holdings.map(h =>
-      h.id === holdingId
-        ? { ...h, shares: Math.max(totalShares, 0), average_price: avgPrice }
-        : h
-    ));
+    // Update local state using functional form to avoid stale state
+    setHoldings(prevHoldings =>
+      prevHoldings.map(h =>
+        h.id === holdingId
+          ? { ...h, shares: Math.max(totalShares, 0), average_price: avgPrice }
+          : h
+      )
+    );
   };
 
   const handleDeleteHolding = async (holdingId: string) => {
@@ -434,13 +436,16 @@ export default function Investments() {
 
       if (error) throw error;
 
-      // Update local transactions state
-      setTransactions(transactions.map(t =>
+      // Create updated transactions list with the edited transaction
+      const updatedTransactions = transactions.map(t =>
         t.id === editingTransaction.id ? editingTransaction : t
-      ));
+      );
 
-      // Recalculate the parent holding
-      await recalculateHolding(editingTransaction.holding_id);
+      // Update local transactions state
+      setTransactions(updatedTransactions);
+
+      // Recalculate the parent holding using the fresh transactions data
+      await recalculateHolding(editingTransaction.holding_id, updatedTransactions);
 
       setEditingTransaction(null);
     } catch (error) {

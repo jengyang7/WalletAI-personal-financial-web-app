@@ -46,7 +46,7 @@ export default function VerifyEmail() {
           <div className="flex items-center justify-center mb-4">
             <CreditCard className="h-12 w-12 text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-white">FinAI</h1>
+          <h1 className="text-3xl font-bold text-white">WalletAI</h1>
           <p className="text-slate-400 mt-2">Your AI-powered financial assistant</p>
         </div>
 
@@ -71,7 +71,7 @@ export default function VerifyEmail() {
           )}
 
           <p className="text-slate-400 text-sm mb-8">
-            Click the link in the email to verify your account and start using FinAI.
+            Click the link in the email to verify your account and start using WalletAI.
           </p>
 
           {/* Resend Email */}

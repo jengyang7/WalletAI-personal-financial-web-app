@@ -9,7 +9,7 @@ import AuthWrapper from "@/components/AuthWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FinAI - Personal Finance Dashboard",
+  title: "WalletAI - Personal Finance Dashboard",
   description: "AI-powered personal finance management dashboard",
 };
 

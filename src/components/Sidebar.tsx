@@ -51,7 +51,7 @@ export default function Sidebar() {
             <Sparkles className="h-3 w-3 text-[var(--accent-success)] absolute -top-1 -right-1 animate-pulse" />
           </div>
           <span className="ml-3 text-xl font-semibold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">
-            FinAI
+            WalletAI
           </span>
         </div>
       </div>

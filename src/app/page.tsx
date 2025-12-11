@@ -350,7 +350,7 @@ export default function LandingPage() {
                 <div className="max-w-5xl mx-auto">
                     <div className="text-center mb-12">
                         <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-4">
-                            See FinAI in Action
+                            See WalletAI in Action
                         </h2>
                         <p className="text-xl text-[var(--text-secondary)]">
                             Watch how easy it is to take control of your finances
@@ -379,7 +379,7 @@ export default function LandingPage() {
                             <div className="absolute bottom-4 right-4 glass-card rounded-xl p-3 animate-slide-in-right" style={{ animationDelay: '400ms' }}>
                                 <div className="flex items-center space-x-2">
                                     <CreditCard className="w-4 h-4 text-[var(--accent-primary)]" />
-                                    <span className="text-xs text-[var(--text-primary)] font-medium">FinAI Dashboard</span>
+                                    <span className="text-xs text-[var(--text-primary)] font-medium">WalletAI Dashboard</span>
                                 </div>
                             </div>
                         </div>
@@ -425,7 +425,7 @@ export default function LandingPage() {
                             <div className="bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-2 rounded-xl">
                                 <CreditCard className="h-5 w-5 text-white" />
                             </div>
-                            <span className="text-xl font-bold text-[var(--text-primary)]">FinAI</span>
+                            <span className="text-xl font-bold text-[var(--text-primary)]">WalletAI</span>
                         </div>
 
                         {/* Links */}
@@ -443,7 +443,7 @@ export default function LandingPage() {
 
                         {/* Copyright */}
                         <p className="text-[var(--text-tertiary)] text-sm">
-                            © {new Date().getFullYear()} FinAI. Made with ❤️
+                            © {new Date().getFullYear()} WalletAI. Made with ❤️
                         </p>
                     </div>
                 </div>

@@ -13,7 +13,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  // Draggable width for the FinAI assistant panel (must be outside conditionals for hooks order)
+  // Draggable width for the WalletAI assistant panel (must be outside conditionals for hooks order)
   const [assistantWidth, setAssistantWidth] = useState<number>(384); // default ~ w-96
   const [isResizing, setIsResizing] = useState(false);
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -100,7 +100,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
           <main className="flex-1 overflow-auto">
             {children}
           </main>
-          {/* Drag handle between main content and FinAI assistant */}
+          {/* Drag handle between main content and WalletAI assistant */}
           <div
             className={`w-1 cursor-col-resize bg-[var(--background)] border-l border-[var(--glass-border)] hover:bg-[var(--card-hover)] transition-colors select-none ${isResizing ? 'bg-[var(--card-hover)]' : ''
               }`}

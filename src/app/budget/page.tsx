@@ -37,8 +37,11 @@ const getBudgetIcon = (iconType: string) => {
   }
 };
 
-const getProgressBarColor = () => {
-  // Always use a blue progress bar for a calmer, consistent look
+const getProgressBarColor = (percentage: number) => {
+  // Red if exceeded, blue otherwise
+  if (percentage > 100) {
+    return 'bg-gradient-to-r from-red-500 to-red-600 shadow-[0_0_12px_rgba(239,68,68,0.35)]';
+  }
   return 'bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-primary-hover)] shadow-[0_0_12px_rgba(59,130,246,0.35)]';
 };
 
@@ -269,7 +272,7 @@ export default function Budget() {
                   </div>
                   <div className="w-full bg-[var(--card-border)]/60 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor()}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${getProgressBarColor(percentage)}`}
                       style={{ width: `${Math.min(percentage, 100)}%` }}
                     ></div>
                   </div>
