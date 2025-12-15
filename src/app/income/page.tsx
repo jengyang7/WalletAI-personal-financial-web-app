@@ -415,7 +415,7 @@ export default function IncomePage() {
                 {Object.entries(groupedIncome).map(([month, days]) => (
                   <div key={month}>
                     {/* Month Header */}
-                    <h3 className="text-[var(--text-primary)] font-semibold mb-4 sticky top-0 py-2">{month}</h3>
+                    <h3 className="text-[var(--text-primary)] font-semibold mb-4 py-2">{month}</h3>
                     
                     {Object.entries(days).map(([day, dayIncome]) => {
                       const dayTotal = dayIncome.reduce((sum, inc) => {

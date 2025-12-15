@@ -346,9 +346,50 @@ export default function Dashboard() {
       return statKey === prevKey;
     });
 
+    // Calculate previous month's net worth (similar logic to selected month)
+    let prevMonthNetWorth = 0;
+    const isPrevMonthCurrent = prevKey === currentMonthKey;
+    
+    if (isPrevMonthCurrent) {
+      // Previous month is current month - use live calculation
+      prevMonthNetWorth = liveNetWorth;
+    } else if (prevMonthStats?.total_net_worth !== undefined) {
+      // Has recorded stats for previous month
+      prevMonthNetWorth = prevMonthStats.total_net_worth;
+    } else {
+      // Calculate backwards for previous month
+      const prevHasTransactions = expenses.some(exp => {
+        const expDate = new Date(exp.date);
+        const expKey = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
+        return expKey === prevKey;
+      }) || income.some(inc => {
+        const incDate = new Date(inc.date);
+        const incKey = `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}`;
+        return incKey === prevKey;
+      });
+      
+      if (prevHasTransactions) {
+        // Calculate cumulative balance from prev month to current
+        const [prevYear, prevMonth] = prevKey.split('-').map(Number);
+        const prevDate = new Date(prevYear, prevMonth - 1, 1);
+        let cumulativeBalance = 0;
+        const tempDate = new Date(prevDate);
+        
+        while (tempDate <= now) {
+          const tempKey = `${tempDate.getFullYear()}-${String(tempDate.getMonth() + 1).padStart(2, '0')}`;
+          cumulativeBalance += getMonthBalance(tempKey);
+          tempDate.setMonth(tempDate.getMonth() + 1);
+        }
+        
+        prevMonthNetWorth = liveNetWorth - cumulativeBalance + getMonthBalance(prevKey);
+      } else {
+        prevMonthNetWorth = 0;
+      }
+    }
+    
     // Calculate net worth change
-    const netWorthChange = prevMonthStats?.total_net_worth && prevMonthStats.total_net_worth > 0
-      ? ((totalNetWorth - prevMonthStats.total_net_worth) / prevMonthStats.total_net_worth) * 100
+    const netWorthChange = prevMonthNetWorth > 0
+      ? ((totalNetWorth - prevMonthNetWorth) / prevMonthNetWorth) * 100
       : 0;
 
     return {
@@ -669,11 +710,14 @@ export default function Dashboard() {
       const now = new Date();
       const monthsRemaining = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30));
 
-      if (progress >= 90 && monthsRemaining > 0) {
+      // Skip goal if name is missing
+      if (!goal.title) return;
+
+      if (progress >= 80 && monthsRemaining > 0) {
         insights.push({
           id: `goal-almost-reached-${goal.id}`,
           type: 'success',
-          title: `Almost Reached: ${goal.name}`,
+          title: `Almost Reached: ${goal.title}`,
           description: `You're at ${progress.toFixed(0)}% of your ${getCurrencyFormatter(goalCurrency)(goal.target_amount)} goal. Just ${getCurrencyFormatter(goalCurrency)(goal.target_amount - currentAmount)} more to go!`,
           action: { text: 'View goals →', link: '/goals' }
         });
@@ -682,11 +726,12 @@ export default function Dashboard() {
         const currentMonthlySavings = financialStats.income.amount - financialStats.expenses.amount;
         
         if (currentMonthlySavings >= monthlyRequired) {
+          const excessAmount = currentMonthlySavings * monthsRemaining - (goal.target_amount - currentAmount);
           insights.push({
             id: `goal-on-track-${goal.id}`,
             type: 'success',
-            title: `On Track for ${goal.name}`,
-            description: `At your current savings rate, you'll exceed your ${getCurrencyFormatter(goalCurrency)(goal.target_amount)} goal by ${getCurrencyFormatter(goalCurrency)(currentMonthlySavings * monthsRemaining - (goal.target_amount - currentAmount))}.`,
+            title: `On Track for ${goal.title}`,
+            description: `At your current savings rate of ${getCurrencyFormatter(goalCurrency)(currentMonthlySavings)}/month, you'll reach your ${getCurrencyFormatter(goalCurrency)(goal.target_amount)} goal with ${getCurrencyFormatter(goalCurrency)(excessAmount)} extra to spare!`,
             action: { text: 'View goals →', link: '/goals' }
           });
         }
@@ -700,14 +745,14 @@ export default function Dashboard() {
     return insights;
   }, [budgets, goals, monthExpenses, expenses, financialStats, previousMonthData, selectedMonth, userSettings, formatCurrency, assets, holdings]);
 
-  // Paginate insights - show 3 per page
+  // Paginate insights - show 4 per page
   const paginatedInsights = useMemo(() => {
-    const INSIGHTS_PER_PAGE = 3;
+    const INSIGHTS_PER_PAGE = 4;
     const start = insightsPage * INSIGHTS_PER_PAGE;
     return aiInsights.slice(start, start + INSIGHTS_PER_PAGE);
   }, [aiInsights, insightsPage]);
 
-  const totalPages = Math.ceil(aiInsights.length / 3);
+  const totalPages = Math.ceil(aiInsights.length / 4);
 
   // Reset to first page when insights change
   useEffect(() => {
@@ -1144,7 +1189,7 @@ export default function Dashboard() {
                   return (
                     <div
                       key={insight.id}
-                      className={`${style.bgColor} rounded-xl p-3.5 hover:scale-[1.01] transition-all duration-300 animate-slide-in-right border border-[var(--card-border)] flex-shrink-0`}
+                      className={`${style.bgColor} rounded-xl p-3.5 transition-all duration-300 animate-slide-in-right border border-[var(--card-border)] flex-shrink-0`}
                       style={{ animationDelay: `${index * 100}ms` }}
                     >
                       <div className="flex items-start">
@@ -1245,7 +1290,7 @@ export default function Dashboard() {
                 {/* Centered text inside gauge */}
                 <text
                   x="96"
-                  y="90"
+                  y="100"
                   textAnchor="middle"
                   fill="var(--text-primary)"
                   fontSize="32"
@@ -1256,7 +1301,7 @@ export default function Dashboard() {
                 </text>
                 <text
                   x="96"
-                  y="112"
+                  y="120"
                   textAnchor="middle"
                   fill="var(--text-secondary)"
                   fontSize="12"
