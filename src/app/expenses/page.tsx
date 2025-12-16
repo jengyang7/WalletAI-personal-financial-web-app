@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X, Sparkles, Zap, Send, Loader2, Check } from 'lucide-react';
 import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { useFinance, type Subscription } from '@/context/FinanceContext';
 import { useMonth } from '@/context/MonthContext';
@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
+import { autoCategorize } from '@/lib/autoCategorization';
 
 interface Expense {
   id: string;
@@ -61,6 +62,23 @@ export default function Expenses() {
     next_billing_date: new Date().toISOString().split('T')[0],
     description: ''
   });
+  const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
+  const [autoCategoryMethod, setAutoCategoryMethod] = useState<'keyword' | 'gemini' | null>(null);
+  const autoCategorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // AI Mode states
+  const [isAIMode, setIsAIMode] = useState(true);
+  const [aiInput, setAiInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewData, setReviewData] = useState<{
+    description: string;
+    amount: string;
+    currency: string;
+    date: string;
+    category: string;
+    method?: 'keyword' | 'gemini' | 'default';
+  } | null>(null);
 
   // Load user currency setting
   useEffect(() => {
@@ -237,6 +255,123 @@ export default function Expenses() {
     return acc;
   }, {} as Record<string, Record<string, Expense[]>>);
 
+  // Auto-categorization when description changes
+  const handleDescriptionChange = useCallback(async (description: string) => {
+    setNewExpense(prev => ({ ...prev, description }));
+    
+    // Clear previous timeout
+    if (autoCategorizeTimeoutRef.current) {
+      clearTimeout(autoCategorizeTimeoutRef.current);
+    }
+    
+    // Don't auto-categorize if description is too short
+    if (description.trim().length < 3) {
+      setAutoCategoryMethod(null);
+      return;
+    }
+    
+    // Debounce auto-categorization (wait 500ms after user stops typing)
+    setIsAutoCategorizing(true);
+    autoCategorizeTimeoutRef.current = setTimeout(async () => {
+      try {
+        const userCurrency = userSettings?.currency || 'USD';
+        const result = await autoCategorize(description, userCurrency, true);
+        
+        // Build the update object
+        const updates: Partial<typeof newExpense> = {
+          category: result.category
+        };
+        
+        // Auto-fill amount if extracted (only if field is empty or auto-filled before)
+        if (result.extractedAmount !== undefined) {
+          updates.amount = result.extractedAmount.toString();
+        }
+        
+        // Auto-fill currency if extracted
+        if (result.extractedCurrency) {
+          updates.currency = result.extractedCurrency;
+        }
+        
+        // Auto-fill date if extracted
+        if (result.extractedDate) {
+          updates.date = result.extractedDate;
+        }
+        
+        // Use cleaned description if available
+        if (result.cleanedDescription && result.cleanedDescription.trim()) {
+          updates.description = result.cleanedDescription;
+        }
+        
+        // Apply all updates at once
+        setNewExpense(prev => ({ ...prev, ...updates }));
+        setAutoCategoryMethod(result.method === 'default' ? null : result.method);
+        
+      } catch (error) {
+        console.error('Auto-categorization error:', error);
+      } finally {
+        setIsAutoCategorizing(false);
+      }
+    }, 500);
+  }, [userSettings?.currency]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCategorizeTimeoutRef.current) {
+        clearTimeout(autoCategorizeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Handle AI input processing
+  const handleAIProcess = async () => {
+    if (!aiInput.trim()) return;
+    
+    setIsProcessing(true);
+    try {
+      const userCurrency = userSettings?.currency || 'USD';
+      const result = await autoCategorize(aiInput, userCurrency, true);
+      
+      // Prepare review data
+      setReviewData({
+        description: result.cleanedDescription || aiInput,
+        amount: result.extractedAmount?.toString() || '',
+        currency: result.extractedCurrency || userCurrency,
+        date: result.extractedDate || new Date().toISOString().split('T')[0],
+        category: result.category,
+        method: result.method
+      });
+      
+      setShowReviewModal(true);
+    } catch (error) {
+      console.error('Error processing AI input:', error);
+      alert('Failed to process expense. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle review confirmation
+  const handleReviewConfirm = async () => {
+    if (!reviewData || !reviewData.amount) return;
+    
+    await addExpense({
+      description: reviewData.description,
+      amount: parseFloat(reviewData.amount),
+      date: reviewData.date,
+      category: reviewData.category,
+      currency: reviewData.currency
+    });
+    
+    // Reset states
+    setShowReviewModal(false);
+    setReviewData(null);
+    setAiInput('');
+    
+    // Show success feedback
+    setTimeout(() => window.location.reload(), 500);
+  };
+
   const handleAddExpense = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (newExpense.description && newExpense.amount) {
@@ -254,6 +389,7 @@ export default function Expenses() {
         category: 'Food & Dining',
         currency: userSettings?.currency || 'USD'
       });
+      setAutoCategoryMethod(null);
     }
   };
 
@@ -458,23 +594,187 @@ export default function Expenses() {
 
           {/* Add New Expense Form */}
           <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
-            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Expense</h2>
-            
-            <form onSubmit={handleAddExpense} className="space-y-4">
-              <div>
-                <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  id="description"
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                  placeholder="e.g., Groceries from Market"
-                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Add New Expense</h2>
+              
+              {/* AI/Manual Toggle */}
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${!isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  Manual
+                </span>
+                <button
+                  onClick={() => setIsAIMode(!isAIMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isAIMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-[var(--card-border)]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isAIMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm flex items-center gap-1 ${isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  <Sparkles className="h-3 w-3" />
+                  AI
+                </span>
               </div>
+            </div>
+            
+            {/* AI Mode */}
+            {isAIMode ? (
+              <div className="space-y-4">
+                <p className="text-m text-[var(--text-secondary)] text-center">
+                  Just describe your expense naturally, we&apos;ll handle the rest
+                </p>
+                
+                <div className="relative">
+                  <textarea
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    placeholder="Try: 'Coffee this morning RM 12' or 'Uber ride yesterday $25' or 'Dinner with friends $80'"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAIProcess();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAIProcess}
+                    disabled={!aiInput.trim() || isProcessing}
+                    className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Review Form (Inline - shown after AI processing) */}
+                {showReviewModal && reviewData && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Review & Confirm</h3>
+                      {reviewData.method && (
+                        <span className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
+                          reviewData.method === 'keyword' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-blue-500/20 text-blue-400'
+                        }`}>
+                          <Check className="h-3 w-3" />
+                          AI-detected
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                        Description
+                      </label>
+                      <input
+                        type="text"
+                        value={reviewData.description}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Capitalize first letter
+                          const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+                          setReviewData({ ...reviewData, description: capitalized });
+                        }}
+                        className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                          Amount
+                        </label>
+                        <input
+                          type="number"
+                          value={reviewData.amount}
+                          onChange={(e) => setReviewData({ ...reviewData, amount: e.target.value })}
+                          step="0.01"
+                          min="0"
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={reviewData.date}
+                          onChange={(e) => setReviewData({ ...reviewData, date: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                          Currency
+                        </label>
+                        <select
+                          value={reviewData.currency}
+                          onChange={(e) => setReviewData({ ...reviewData, currency: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                          Category
+                        </label>
+                        <select
+                          value={reviewData.category}
+                          onChange={(e) => setReviewData({ ...reviewData, category: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {categories.map((category) => (
+                            <option key={category} value={category}>{category}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleReviewConfirm}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      Add Expense
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Manual Mode - Original Form */
+              <form onSubmit={handleAddExpense} className="space-y-4">
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    id="description"
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                    placeholder="e.g., Groceries from Market"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -511,48 +811,47 @@ export default function Expenses() {
                   />
                 </div>
 
-                {/* Currency selector below amount */}
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
-                  <select
-                    value={newExpense.currency}
-                    onChange={(e) => setNewExpense({ ...newExpense, currency: e.target.value })}
-                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
+                    <select
+                      value={newExpense.currency}
+                      onChange={(e) => setNewExpense({ ...newExpense, currency: e.target.value })}
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
+                      Category
+                    </label>
+                    <select
+                      id="category"
+                      value={newExpense.category}
+                      onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
+                      className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="category" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
-                  Category
-                </label>
-                <select
-                  id="category"
-                  value={newExpense.category}
-                  onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                  className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
                 >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-
-              <button
-                type="submit"
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Expense
-              </button>
-            </form>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Expense
+                </button>
+              </form>
+            )}
           </div>
 
           {/* Subscriptions Section */}
@@ -1028,6 +1327,7 @@ export default function Expenses() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

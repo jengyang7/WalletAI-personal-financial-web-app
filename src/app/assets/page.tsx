@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Wallet, Trash2, TrendingUp, History, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Wallet, Trash2, TrendingUp, History, ArrowUpRight, ArrowDownRight, Sparkles, Send, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import { MonthEndSavingsLog, getMonthEndSavingsHistory, deleteMonthEndSavingsLog } from '@/lib/monthEndSavings';
+import { autoCategorize } from '@/lib/autoCategorization';
 
 interface Asset {
   id: string;
@@ -56,6 +57,19 @@ export default function AssetsPage() {
   const [deletingAsset, setDeletingAsset] = useState<string | null>(null);
   const [showCustomType, setShowCustomType] = useState(false);
   const isLoadingRef = useRef(false);
+
+  // AI Mode states
+  const [isAIMode, setIsAIMode] = useState(true);
+  const [aiInput, setAiInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewData, setReviewData] = useState<{
+    name: string;
+    type: string;
+    amount: string;
+    description: string;
+    currency: string;
+  } | null>(null);
 
   // Transfer history state
   const [transferHistory, setTransferHistory] = useState<MonthEndSavingsLog[]>([]);
@@ -130,6 +144,83 @@ export default function AssetsPage() {
       return acc;
     }, {} as Record<string, Asset[]>);
   }, [assets]);
+
+  // Detect asset type from description
+  const detectAssetType = (description: string): string => {
+    const desc = description.toLowerCase();
+    if (desc.includes('cash') || desc.includes('money')) return 'Cash';
+    if (desc.includes('bank') || desc.includes('account') || desc.includes('saving')) return 'Bank Account';
+    if (desc.includes('invest') || desc.includes('stock') || desc.includes('bond') || desc.includes('fund')) return 'Investment';
+    if (desc.includes('wallet') || desc.includes('paypal') || desc.includes('venmo') || desc.includes('grab') || desc.includes('touchngo')) return 'E-Wallet';
+    if (desc.includes('crypto') || desc.includes('bitcoin') || desc.includes('ethereum') || desc.includes('btc') || desc.includes('eth')) return 'Cryptocurrency';
+    if (desc.includes('house') || desc.includes('property') || desc.includes('real estate') || desc.includes('land')) return 'Real Estate';
+    if (desc.includes('car') || desc.includes('vehicle') || desc.includes('motorcycle') || desc.includes('bike')) return 'Vehicle';
+    return 'Other';
+  };
+
+  // Handle AI input processing
+  const handleAIProcess = async () => {
+    if (!aiInput.trim()) return;
+    
+    setIsProcessing(true);
+    try {
+      const userCurrency = userSettings?.currency || 'USD';
+      const result = await autoCategorize(aiInput, userCurrency, true);
+      
+      // Detect asset type from description
+      const detectedType = detectAssetType(result.cleanedDescription || aiInput);
+      
+      // Extract asset name from description (first few words)
+      const cleanedDesc = result.cleanedDescription || aiInput;
+      const words = cleanedDesc.split(' ').filter(w => w.length > 0);
+      const assetName = words.slice(0, Math.min(4, words.length)).join(' ');
+      
+      setReviewData({
+        name: assetName || cleanedDesc.substring(0, 50),
+        type: detectedType,
+        amount: result.extractedAmount?.toString() || '',
+        description: cleanedDesc,
+        currency: result.extractedCurrency || userCurrency
+      });
+      
+      setShowReviewModal(true);
+    } catch (error) {
+      console.error('Error processing AI input:', error);
+      alert('Failed to process asset. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle review confirmation
+  const handleReviewConfirm = async () => {
+    if (!reviewData || !reviewData.amount) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('assets')
+        .insert({
+          user_id: user?.id,
+          name: reviewData.name,
+          type: reviewData.type,
+          amount: parseFloat(reviewData.amount),
+          description: reviewData.description,
+          currency: reviewData.currency
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAssets([data, ...assets]);
+      setShowReviewModal(false);
+      setReviewData(null);
+      setAiInput('');
+    } catch (error) {
+      console.error('Error adding asset:', error);
+      alert('Failed to add asset');
+    }
+  };
 
   const handleAddAsset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,9 +421,152 @@ export default function AssetsPage() {
 
           {/* Add New Asset Form */}
           <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in" style={{ animationDelay: '100ms' }}>
-            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Asset</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Add New Asset</h2>
+              
+              {/* AI/Manual Toggle */}
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${!isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  Manual
+                </span>
+                <button
+                  onClick={() => setIsAIMode(!isAIMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isAIMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-[var(--card-border)]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isAIMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm flex items-center gap-1 ${isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  <Sparkles className="h-3 w-3" />
+                  AI
+                </span>
+              </div>
+            </div>
+            
+            {isAIMode ? (
+              <div className="space-y-4">
+                <p className="text-m text-[var(--text-secondary)] text-center">
+                  Just describe your asset naturally, we&apos;ll handle the rest
+                </p>
+                
+                <div className="relative">
+                  <textarea
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    placeholder="Try: 'Bank savings $10,000' or 'Crypto wallet 2.5 BTC worth $120k' or 'Emergency fund RM 50000'"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAIProcess();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAIProcess}
+                    disabled={!aiInput.trim() || isProcessing}
+                    className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
 
-            <form onSubmit={handleAddAsset} className="space-y-4">
+                {/* Review Form (Inline) */}
+                {showReviewModal && reviewData && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Review & Confirm</h3>
+                      <span className="text-xs px-2 py-1 rounded-full flex items-center gap-1 bg-blue-500/20 text-blue-400">
+                        <Check className="h-3 w-3" />
+                        AI-detected
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Asset Name</label>
+                      <input
+                        type="text"
+                        value={reviewData.name}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const capitalized = value.charAt(0).toUpperCase() + value.slice(1);
+                          setReviewData({ ...reviewData, name: capitalized });
+                        }}
+                        className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Type</label>
+                        <select
+                          value={reviewData.type}
+                          onChange={(e) => setReviewData({ ...reviewData, type: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {defaultAssetTypes.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Amount</label>
+                        <input
+                          type="number"
+                          value={reviewData.amount}
+                          onChange={(e) => setReviewData({ ...reviewData, amount: e.target.value })}
+                          step="0.01"
+                          min="0"
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
+                        <select
+                          value={reviewData.currency}
+                          onChange={(e) => setReviewData({ ...reviewData, currency: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description (Optional)</label>
+                      <input
+                        type="text"
+                        value={reviewData.description}
+                        onChange={(e) => setReviewData({ ...reviewData, description: e.target.value })}
+                        className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleReviewConfirm}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      Add Asset
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Asset Name
@@ -453,6 +687,7 @@ export default function AssetsPage() {
                 Add Asset
               </button>
             </form>
+            )}
           </div>
         </div>
 

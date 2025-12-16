@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, DollarSign, Briefcase, Trash2 } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Plus, DollarSign, Briefcase, Trash2, Send, Loader2, Check, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
+import { autoCategorize } from '@/lib/autoCategorization';
 
 interface Income {
   id: string;
@@ -44,6 +45,19 @@ export default function IncomePage() {
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
   const [deletingIncome, setDeletingIncome] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<{ currency?: string; [key: string]: unknown } | null>(null);
+  
+  // AI Mode states
+  const [isAIMode, setIsAIMode] = useState(true);
+  const [aiInput, setAiInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewData, setReviewData] = useState<{
+    source: string;
+    amount: string;
+    description: string;
+    date: string;
+    currency: string;
+  } | null>(null);
 
   const loadIncome = async () => {
     try {
@@ -116,6 +130,78 @@ export default function IncomePage() {
     }, {} as Record<string, Record<string, Income[]>>);
   }, [filteredIncome]);
 
+  // Handle AI input processing
+  const handleAIProcess = async () => {
+    if (!aiInput.trim()) return;
+    
+    setIsProcessing(true);
+    try {
+      const userCurrency = userSettings?.currency || 'USD';
+      const result = await autoCategorize(aiInput, userCurrency, true);
+      
+      // Map to income source (try to detect from description or use default)
+      const detectedSource = detectIncomeSource(result.cleanedDescription || aiInput);
+      
+      setReviewData({
+        source: detectedSource,
+        amount: result.extractedAmount?.toString() || '',
+        description: result.cleanedDescription || aiInput,
+        date: result.extractedDate || new Date().toISOString().split('T')[0],
+        currency: result.extractedCurrency || userCurrency
+      });
+      
+      setShowReviewModal(true);
+    } catch (error) {
+      console.error('Error processing AI input:', error);
+      alert('Failed to process income. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Detect income source from description
+  const detectIncomeSource = (description: string): string => {
+    const desc = description.toLowerCase();
+    if (desc.includes('salary') || desc.includes('paycheck') || desc.includes('wage')) return 'Salary';
+    if (desc.includes('freelance') || desc.includes('project') || desc.includes('gig')) return 'Freelance';
+    if (desc.includes('business') || desc.includes('profit')) return 'Business';
+    if (desc.includes('invest') || desc.includes('dividend') || desc.includes('stock')) return 'Investment';
+    if (desc.includes('rent') || desc.includes('rental') || desc.includes('lease')) return 'Rental';
+    if (desc.includes('gift') || desc.includes('present')) return 'Gift';
+    if (desc.includes('bonus') || desc.includes('commission')) return 'Bonus';
+    return 'Other';
+  };
+
+  // Handle review confirmation
+  const handleReviewConfirm = async () => {
+    if (!reviewData || !reviewData.amount) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('income')
+        .insert({
+          user_id: user?.id,
+          amount: parseFloat(reviewData.amount),
+          source: reviewData.source,
+          description: reviewData.description,
+          date: reviewData.date,
+          currency: reviewData.currency
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setIncome([data, ...income]);
+      setShowReviewModal(false);
+      setReviewData(null);
+      setAiInput('');
+    } catch (error) {
+      console.error('Error adding income:', error);
+      alert('Failed to add income');
+    }
+  };
+
   const handleAddIncome = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (newIncome.source && newIncome.amount) {
@@ -127,7 +213,8 @@ export default function IncomePage() {
             amount: parseFloat(newIncome.amount),
             source: newIncome.source,
             description: newIncome.description,
-            date: newIncome.date
+            date: newIncome.date,
+            currency: newIncome.currency
           })
           .select()
           .single();
@@ -305,9 +392,148 @@ export default function IncomePage() {
 
           {/* Add New Income Form */}
           <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
-            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Add New Income</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Add New Income</h2>
+              
+              {/* AI/Manual Toggle */}
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${!isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  Manual
+                </span>
+                <button
+                  onClick={() => setIsAIMode(!isAIMode)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isAIMode ? 'bg-gradient-to-r from-blue-500 to-purple-500' : 'bg-[var(--card-border)]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isAIMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm flex items-center gap-1 ${isAIMode ? 'text-[var(--text-primary)] font-medium' : 'text-[var(--text-secondary)]'}`}>
+                  <Sparkles className="h-3 w-3" />
+                  AI
+                </span>
+              </div>
+            </div>
             
-            <form onSubmit={handleAddIncome} className="space-y-4">
+            {isAIMode ? (
+              <div className="space-y-4">
+                <p className="text-m text-[var(--text-secondary)] text-center">
+                  Just describe your income naturally, we&apos;ll handle the rest
+                </p>
+                
+                <div className="relative">
+                  <textarea
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    placeholder="Try: 'Salary payment $5000' or 'Freelance project RM 2000 yesterday'"
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleAIProcess();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAIProcess}
+                    disabled={!aiInput.trim() || isProcessing}
+                    className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Review Form (Inline) */}
+                {showReviewModal && reviewData && (
+                  <div className="space-y-4 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Review & Confirm</h3>
+                      <span className="text-xs px-2 py-1 rounded-full flex items-center gap-1 bg-blue-500/20 text-blue-400">
+                        <Check className="h-3 w-3" />
+                        AI-detected
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Source</label>
+                        <select
+                          value={reviewData.source}
+                          onChange={(e) => setReviewData({ ...reviewData, source: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {incomeSources.map((source) => (
+                            <option key={source} value={source}>{source}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Amount</label>
+                        <input
+                          type="number"
+                          value={reviewData.amount}
+                          onChange={(e) => setReviewData({ ...reviewData, amount: e.target.value })}
+                          step="0.01"
+                          min="0"
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Currency</label>
+                        <select
+                          value={reviewData.currency}
+                          onChange={(e) => setReviewData({ ...reviewData, currency: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {['USD','EUR','GBP','JPY','CNY','SGD','MYR'].map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Date</label>
+                        <input
+                          type="date"
+                          value={reviewData.date}
+                          onChange={(e) => setReviewData({ ...reviewData, date: e.target.value })}
+                          className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Description (Optional)</label>
+                      <input
+                        type="text"
+                        value={reviewData.description}
+                        onChange={(e) => setReviewData({ ...reviewData, description: e.target.value })}
+                        className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-3 py-2 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleReviewConfirm}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      Add Income
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleAddIncome} className="space-y-4">
               <div>
                 <label htmlFor="source" className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
                   Source
@@ -398,6 +624,7 @@ export default function IncomePage() {
                 Add Income
               </button>
             </form>
+            )}
           </div>
         </div>
 
