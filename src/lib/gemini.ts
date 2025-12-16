@@ -16,7 +16,7 @@ const normalizeCurrencyCode = (code?: string) => {
 const functions = [
   {
     name: 'get_expenses',
-    description: 'Retrieve user expenses with optional filters for category, date range, or amount. Can return data in a specific currency.',
+    description: 'Retrieve user expenses with optional filters for category, date range, amount, and day of week. Can return data in a specific currency.',
     parameters: {
       type: 'object',
       properties: {
@@ -40,6 +40,11 @@ const functions = [
         max_amount: {
           type: 'number',
           description: 'Maximum expense amount'
+        },
+        day_of_week_filter: {
+          type: 'string',
+          description: 'Filter by day of week. Use "weekend" for Saturdays and Sundays, "weekday" for Monday through Friday, or specific days like "saturday", "sunday", "monday", etc.',
+          enum: ['weekend', 'weekday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         },
         limit: {
           type: 'number',
@@ -395,26 +400,72 @@ async function getExpenses(userId: string, params: Record<string, unknown>, user
     query = query.order('date', { ascending: false });
   }
 
-  if (params.limit) {
-    query = query.limit(params.limit as number);
-  } else {
-    query = query.limit(50);
+  // Don't apply limit here if we need to filter by day of week
+  // We'll apply it after filtering
+  if (!params.day_of_week_filter) {
+    if (params.limit) {
+      query = query.limit(params.limit as number);
+    } else {
+      query = query.limit(50);
+    }
   }
 
   const { data, error } = await query;
 
   if (error) throw error;
 
+  // Filter by day of week if specified
+  let filteredData = data || [];
+  if (params.day_of_week_filter) {
+    const dayFilter = (params.day_of_week_filter as string).toLowerCase();
+    
+    filteredData = filteredData.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      const dayOfWeek = expenseDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      
+      switch (dayFilter) {
+        case 'weekend':
+          return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+        case 'weekday':
+          return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday through Friday
+        case 'sunday':
+          return dayOfWeek === 0;
+        case 'monday':
+          return dayOfWeek === 1;
+        case 'tuesday':
+          return dayOfWeek === 2;
+        case 'wednesday':
+          return dayOfWeek === 3;
+        case 'thursday':
+          return dayOfWeek === 4;
+        case 'friday':
+          return dayOfWeek === 5;
+        case 'saturday':
+          return dayOfWeek === 6;
+        default:
+          return true; // No filter if unrecognized
+      }
+    });
+
+    // Apply limit after filtering
+    const limit = (params.limit as number) || 50;
+    filteredData = filteredData.slice(0, limit);
+  }
+
   // Calculate total in user's currency
-  const total = data?.reduce((sum, e) => {
+  const total = filteredData.reduce((sum, e) => {
     return sum + convertCurrency(e.amount, e.currency || 'USD', userCurrency);
-  }, 0) || 0;
+  }, 0);
 
   return {
-    expenses: data,
-    count: data?.length || 0,
+    expenses: filteredData,
+    count: filteredData.length,
     total: Math.round(total * 100) / 100,
-    currency: userCurrency
+    currency: userCurrency,
+    ...(params.day_of_week_filter ? { 
+      filtered_by: params.day_of_week_filter,
+      note: `Expenses filtered to show only ${params.day_of_week_filter} transactions`
+    } : {})
   };
 }
 
@@ -1020,6 +1071,28 @@ Example response format:
 • [Any notable changes]
 
 💡 **Insights**: [Provide actionable advice based on the data]"
+
+WEEKEND/WEEKDAY FILTERING:
+When users ask about spending on "weekends", "weekdays", or specific days of the week:
+1. Use the day_of_week_filter parameter in get_expenses function
+2. Set day_of_week_filter to:
+   - "weekend" for Saturdays and Sundays
+   - "weekday" for Monday through Friday
+   - Specific day names: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+3. Combine with other filters like category, date range, etc.
+4. The function will automatically filter expenses and return only matching transactions
+
+Examples:
+- "How much did I spend on food on weekends last month?"
+  → Call: get_expenses({ category: "Food & Dining", start_date: "2025-11-01", end_date: "2025-11-30", day_of_week_filter: "weekend" })
+
+- "Show me my transportation expenses on weekdays this month"
+  → Call: get_expenses({ category: "Transportation", start_date: "2025-12-01", end_date: "2025-12-31", day_of_week_filter: "weekday" })
+
+- "How much did I spend on Saturdays last month?"
+  → Call: get_expenses({ start_date: "2025-11-01", end_date: "2025-11-30", day_of_week_filter: "saturday" })
+
+When presenting results, clearly indicate the day filter applied and provide context.
 
 INVESTMENT CAPABILITIES:
 - You can access the user's investment portfolio using get_portfolio function
