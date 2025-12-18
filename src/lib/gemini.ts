@@ -1390,11 +1390,10 @@ User: "Check my food budget"
 
         // Build functionResponse parts, including the original thoughtSignature (or dummy if missing)
         const functionResponseParts: Part[] = executionResults.map(r => ({
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           functionResponse: {
             name: r.name,
             response: r.result
-          } as any,
+          } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
           // If thoughtSignature is missing, use documented dummy value to bypass validator
           // See: https://github.com/sst/opencode/issues/4832
           thoughtSignature: r.thoughtSignature ?? 'skip_thought_signature_validator'
