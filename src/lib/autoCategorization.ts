@@ -220,13 +220,34 @@ export function extractAmountAndCurrency(
     }
   }
 
-  // Clean up common prepositions and filler words around amounts
+  // Clean up description by removing:
+  // 1. Temporal words (this morning, yesterday, last night, etc.)
+  // 2. Common prepositions and filler words
+  // 3. Action words
   cleanedDesc = cleanedDesc
-    .replace(/\b(for|cost|costs|paid|pay|spent|spend|purchase|purchased|buying|bought|at)\b/gi, '')
+    // Remove temporal phrases
+    .replace(/\b(this morning|this afternoon|this evening|last night|last week|today|yesterday|just now|earlier|recently)\b/gi, '')
+    // Remove relative time expressions
+    .replace(/\b(\d+\s*)?(days?|weeks?|months?)\s*ago\b/gi, '')
+    // Remove day names
+    .replace(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/gi, '')
+    // Remove prepositions and filler words
+    .replace(/\b(for|at|to|from|in|on|with|the|a|an)\b/gi, '')
+    // Remove action words
+    .replace(/\b(cost|costs|paid|pay|spent|spend|purchase|purchased|buying|bought|got|getting|had|have)\b/gi, '')
+    // Clean up multiple spaces
     .replace(/\s+/g, ' ')
     .trim();
 
-  return { amount, currency, cleanedDescription: capitalizeFirstLetter(cleanedDesc) };
+  // Apply Title Case formatting
+  const toTitleCase = (str: string): string => {
+    return str.split(' ')
+      .filter(word => word.length > 0)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  return { amount, currency, cleanedDescription: toTitleCase(cleanedDesc) || capitalizeFirstLetter(cleanedDesc) };
 }
 
 /**
@@ -387,10 +408,38 @@ Rules:
   - "2 days ago" → calculate accordingly
   - DD/MM format (e.g., "12/11" = 12th November ${new Date().getFullYear()})
   - DD/MM/YY format (e.g., "12/11/24" = 12th November 2024)
-- cleanedDescription: remove ALL these words: amount, currency, date, "for", "cost", "costs", "paid", "pay", "spent", "spend", "purchase", "purchased", "buying", "bought", "at"
-  Keep ONLY the essential item/service name
+- cleanedDescription: Extract ONLY the core item, product, service, or merchant name.
+  REMOVE all of these:
+  * Temporal words: this morning, this afternoon, this evening, today, yesterday, last night, last week, ago, now, just now, earlier, recently
+  * Prepositions/filler: for, at, to, from, in, on, with, the, a, an
+  * Action words: cost, costs, paid, pay, spent, spend, purchase, purchased, buying, bought, got, getting, had, have
+  * Amounts and currency: any numbers, $, RM, S$, €, £, ¥, etc.
+  * Date references: any dates, day names, DD/MM formats
+  
+  The result should be a SHORT, CLEAN description (1-4 words max), properly capitalized (Title Case).
+  If there's a brand/merchant name, prioritize that.
 
 Examples:
+Input: "coffee this morning for $10"
+Output: {
+  "category": "Food & Dining",
+  "confidence": "high",
+  "extractedAmount": 10,
+  "extractedCurrency": "${defaultCurrency}",
+  "extractedDate": "${new Date().toISOString().split('T')[0]}",
+  "cleanedDescription": "Coffee"
+}
+
+Input: "starbucks coffee this morning $8"
+Output: {
+  "category": "Food & Dining",
+  "confidence": "high",
+  "extractedAmount": 8,
+  "extractedCurrency": "${defaultCurrency}",
+  "extractedDate": "${new Date().toISOString().split('T')[0]}",
+  "cleanedDescription": "Starbucks Coffee"
+}
+
 Input: "lunch $30 12/11"
 Output: {
   "category": "Food & Dining",
@@ -398,7 +447,7 @@ Output: {
   "extractedAmount": 30,
   "extractedCurrency": "${defaultCurrency}",
   "extractedDate": "${new Date().getFullYear()}-11-12",
-  "cleanedDescription": "lunch"
+  "cleanedDescription": "Lunch"
 }
 
 Input: "uber to office today RM25"
@@ -408,7 +457,7 @@ Output: {
   "extractedAmount": 25,
   "extractedCurrency": "MYR",
   "extractedDate": "${new Date().toISOString().split('T')[0]}",
-  "cleanedDescription": "uber to office"
+  "cleanedDescription": "Uber To Office"
 }
 
 Input: "Mouse S$50 yesterday"
@@ -418,7 +467,37 @@ Output: {
   "extractedAmount": 50,
   "extractedCurrency": "SGD",
   "extractedDate": "${new Date(Date.now() - 86400000).toISOString().split('T')[0]}",
-  "cleanedDescription": "mouse"
+  "cleanedDescription": "Mouse"
+}
+
+Input: "got groceries at walmart for $150 last week"
+Output: {
+  "category": "Groceries",
+  "confidence": "high",
+  "extractedAmount": 150,
+  "extractedCurrency": "${defaultCurrency}",
+  "extractedDate": "${new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]}",
+  "cleanedDescription": "Walmart Groceries"
+}
+
+Input: "paid electricity bill $80"
+Output: {
+  "category": "Utilities",
+  "confidence": "high",
+  "extractedAmount": 80,
+  "extractedCurrency": "${defaultCurrency}",
+  "extractedDate": null,
+  "cleanedDescription": "Electricity Bill"
+}
+
+Input: "salary payment $5000"
+Output: {
+  "category": "Miscellaneous",
+  "confidence": "medium",
+  "extractedAmount": 5000,
+  "extractedCurrency": "${defaultCurrency}",
+  "extractedDate": null,
+  "cleanedDescription": "Salary Payment"
 }`
             }]
           }],
