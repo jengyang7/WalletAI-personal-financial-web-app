@@ -419,11 +419,18 @@ export default function Dashboard() {
   const cashflowData = useMemo(() => {
     const profileCurrency = userSettings?.currency || 'USD';
     const data = [];
-    const now = new Date();
+
+    // Parse selected month to use as end point
+    const [selectedYear, selectedMonthNum] = selectedMonth.split('-').map(Number);
+    const endDate = new Date(selectedYear, selectedMonthNum - 1, 1); // selectedMonth is 1-indexed
 
     for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
+      const date = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+      // Show year only on January for context
+      const isJanuary = date.getMonth() === 0;
+      const monthLabel = isJanuary
+        ? date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        : date.toLocaleDateString('en-US', { month: 'short' });
 
       const monthExpenses = expenses
         .filter(exp => {
@@ -462,7 +469,7 @@ export default function Dashboard() {
     }
 
     return data;
-  }, [expenses, income, userSettings]);
+  }, [expenses, income, userSettings, selectedMonth]);
 
   // Calculate savings rate for current month
   const savingsRate = useMemo(() => {
@@ -723,11 +730,18 @@ export default function Dashboard() {
   const balanceTrend = useMemo(() => {
     const profileCurrency = userSettings?.currency || 'USD';
     const data = [];
-    const now = new Date();
+
+    // Parse selected month to use as end point
+    const [selectedYear, selectedMonthNum] = selectedMonth.split('-').map(Number);
+    const endDate = new Date(selectedYear, selectedMonthNum - 1, 1); // selectedMonth is 1-indexed
 
     for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
+      const date = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+      // Show year only on January for context
+      const isJanuary = date.getMonth() === 0;
+      const monthLabel = isJanuary
+        ? date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+        : date.toLocaleDateString('en-US', { month: 'short' });
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
       // Calculate income for this month
@@ -756,7 +770,7 @@ export default function Dashboard() {
     }
 
     return data;
-  }, [income, expenses, userSettings]);
+  }, [income, expenses, userSettings, selectedMonth]);
 
   // Net Worth by type for pie chart (includes assets + investments)
   const netWorthByType = useMemo(() => {
@@ -816,39 +830,50 @@ export default function Dashboard() {
     };
   }, [assets, holdings, wallets, userSettings]);
 
-  // Recent transactions (combined income and expenses)
+  // Recent transactions (combined income and expenses) - filtered by selected month
   const recentTransactions = useMemo(() => {
     const profileCurrency = userSettings?.currency || 'USD';
+    const [selectedYear, selectedMonthNum] = selectedMonth.split('-').map(Number);
 
-    // Get recent expenses
-    const expensesList = expenses.slice(0, 10).map(exp => ({
-      id: exp.id,
-      type: 'expense' as const,
-      description: exp.description,
-      amount: -convertCurrency(exp.amount, (exp as { currency?: string }).currency || 'USD', profileCurrency),
-      category: exp.category,
-      date: new Date(exp.date),
-      dateStr: new Date(exp.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }));
+    // Filter and map expenses for the selected month
+    const expensesList = expenses
+      .filter(exp => {
+        const expDate = new Date(exp.date);
+        return expDate.getFullYear() === selectedYear && expDate.getMonth() + 1 === selectedMonthNum;
+      })
+      .map(exp => ({
+        id: exp.id,
+        type: 'expense' as const,
+        description: exp.description,
+        amount: -convertCurrency(exp.amount, (exp as { currency?: string }).currency || 'USD', profileCurrency),
+        category: exp.category,
+        date: new Date(exp.date),
+        dateStr: new Date(exp.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      }));
 
-    // Get recent income
-    const incomeList = income.slice(0, 10).map(inc => ({
-      id: (inc as { id?: string }).id || String(Math.random()),
-      type: 'income' as const,
-      description: (inc as { description?: string }).description || (inc as { source?: string }).source || 'Income',
-      amount: convertCurrency(inc.amount, inc.currency || 'USD', profileCurrency),
-      category: (inc as { source?: string }).source || 'Income',
-      date: new Date(inc.date),
-      dateStr: new Date(inc.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }));
+    // Filter and map income for the selected month
+    const incomeList = income
+      .filter(inc => {
+        const incDate = new Date(inc.date);
+        return incDate.getFullYear() === selectedYear && incDate.getMonth() + 1 === selectedMonthNum;
+      })
+      .map(inc => ({
+        id: (inc as { id?: string }).id || String(Math.random()),
+        type: 'income' as const,
+        description: (inc as { description?: string }).description || (inc as { source?: string }).source || 'Income',
+        amount: convertCurrency(inc.amount, inc.currency || 'USD', profileCurrency),
+        category: (inc as { source?: string }).source || 'Income',
+        date: new Date(inc.date),
+        dateStr: new Date(inc.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      }));
 
     // Combine and sort by date
     const allTransactions = [...expensesList, ...incomeList]
       .sort((a, b) => b.date.getTime() - a.date.getTime())
-      .slice(0, 10); // Get more for filtering
+      .slice(0, 10); // Get top 10 for filtering
 
     return allTransactions;
-  }, [expenses, income, userSettings]);
+  }, [expenses, income, userSettings, selectedMonth]);
 
   // Filtered transactions based on dropdown
   const filteredTransactions = useMemo(() => {
@@ -1017,13 +1042,6 @@ export default function Dashboard() {
                       style={{ fontSize: '12px', fontWeight: 300 }}
                       axisLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
                       tickLine={false}
-                      tickFormatter={(value, index) => {
-                        const now = new Date();
-                        const date = new Date(now.getFullYear(), now.getMonth() - (11 - index), 1);
-                        const month = date.toLocaleDateString('en-US', { month: 'short' });
-                        const year = date.getFullYear().toString().slice(-2);
-                        return index === 0 || date.getMonth() === 0 ? `${month}'${year}` : month;
-                      }}
                     />
                     <YAxis
                       stroke="var(--text-secondary)"
@@ -1143,7 +1161,7 @@ export default function Dashboard() {
                           };
                         case 'success':
                           return {
-                            bgColor: 'bg-green-500/5',
+                            bgColor: 'bg-green-500/10',
                             borderColor: 'border-green-500/20',
                             icon: <CheckCircle className="h-5 w-5 text-green-500" />,
                             iconBg: 'bg-green-500/10',
@@ -1390,7 +1408,7 @@ export default function Dashboard() {
 
           {/* Balance Trend - Same height as transactions tile - Responsive */}
           <div className="lg:col-span-4 glass-card rounded-2xl p-4 md:p-6 animate-scale-in flex flex-col" style={{ animationDelay: '550ms', minHeight: 'clamp(350px, 30vw, 450px)' }}>
-            <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-6 flex-shrink-0">Last 12 Month Balance</h3>
+            <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-6 flex-shrink-0">Balance</h3>
             <div className="flex-1 min-h-0 p-2 pr-4" role="img" aria-label="Line chart showing monthly balance (income minus expenses) over the last 12 months">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={balanceTrend} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
@@ -1400,13 +1418,6 @@ export default function Dashboard() {
                     style={{ fontSize: '12px', fontWeight: 300 }}
                     axisLine={{ stroke: 'var(--text-tertiary)', strokeWidth: 1 }}
                     tickLine={false}
-                    tickFormatter={(value, index) => {
-                      const now = new Date();
-                      const date = new Date(now.getFullYear(), now.getMonth() - (11 - index), 1);
-                      const month = date.toLocaleDateString('en-US', { month: 'short' });
-                      const year = date.getFullYear().toString().slice(-2);
-                      return index === 0 || date.getMonth() === 0 ? `${month}'${year}` : month;
-                    }}
                   />
                   <YAxis
                     stroke="var(--text-secondary)"

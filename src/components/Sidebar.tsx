@@ -133,7 +133,7 @@ export default function Sidebar() {
                     className={clsx(
                       'group flex items-center rounded-2xl px-4 py-3.5 text-base font-medium',
                       isActive
-                        ? 'bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white shadow-lg shadow-blue-500/30'
+                        ? 'bg-gradient-to-r from-[#3b82f6] to-[#6366f1] text-white'
                         : 'sidebar-nav-hover text-[var(--text-secondary)]'
                     )}
                   >
@@ -198,14 +198,18 @@ export default function Sidebar() {
                   setMobileMenuOpen(false);
                   setProfileDropdownOpen(false);
                 }}
-                className="flex items-center px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                className="flex items-center px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors"
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <Settings className="mr-3 h-4 w-4 text-[var(--text-tertiary)]" />
                 Settings
               </Link>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center px-4 py-3 text-sm font-medium text-[var(--text-secondary)] hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                className="w-full flex items-center px-4 py-3 text-sm font-medium text-[var(--text-secondary)] transition-colors"
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 <LogOut className="mr-3 h-4 w-4 text-[var(--text-tertiary)]" />
                 Logout
@@ -216,7 +220,12 @@ export default function Sidebar() {
           {/* Profile Row (clickable) */}
           <button
             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-            className="w-full flex items-center p-2 rounded-xl hover:bg-[var(--card-hover)] transition-colors focus:outline-none"
+            className="w-full flex items-center p-2 rounded-xl transition-colors focus:outline-none"
+            style={{
+              backgroundColor: 'transparent'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <div className="relative">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg">
