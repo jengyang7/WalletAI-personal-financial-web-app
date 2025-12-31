@@ -810,7 +810,7 @@ export default function Dashboard() {
           name,
           value,
           color: colors[index % colors.length],
-          percentage: total > 0 ? Math.round((value / total) * 100) : 0
+          percentage: total > 0 && value > 0 ? Math.max(1, Math.round((value / total) * 100)) : 0
         }))
         .sort((a, b) => b.value - a.value)
     };
@@ -1199,7 +1199,7 @@ export default function Dashboard() {
 
           {/* Row 3: Net Worth + Top Expenses - Responsive height */}
           {/* Net Worth Pie Chart */}
-          <div className="lg:col-span-4" style={{ minHeight: 'clamp(280px, 25vw, 350px)' }}>
+          <div className="lg:col-span-4" style={{ minHeight: 'clamp(280px, 25vw, 350px)', containerType: 'inline-size' }}>
             <Link href="/assets" className="glass-card rounded-2xl p-4 md:p-6 animate-slide-in-up h-full flex flex-col cursor-pointer group hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300" style={{ animationDelay: '400ms' }}>
               <div className="flex items-center justify-between mb-3 flex-shrink-0">
                 <h3 className="text-base md:text-lg font-semibold text-[var(--text-primary)]">Net Worth</h3>
@@ -1238,7 +1238,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Legend on Right */}
                   <div className="flex-1 space-y-2 xl:space-y-4 w-full">
                     {netWorthByType.types.map((type) => (
                       <div key={type.name} className="flex items-center justify-between">
@@ -1247,8 +1246,9 @@ export default function Dashboard() {
                           <span className="text-sm text-[var(--text-primary)] font-medium">{type.name}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">{formatCurrency(type.value)}</span>
-                          <span className="text-xs text-[var(--text-tertiary)] ml-1">({type.percentage}%)</span>
+                          <span className="net-worth-amount text-sm font-semibold text-[var(--text-primary)]">{formatCurrency(type.value)}</span>
+                          <span className="net-worth-pct-with-parens text-xs text-[var(--text-secondary)] ml-1">({type.percentage}%)</span>
+                          <span className="net-worth-pct-no-parens text-xs text-[var(--text-secondary)]">{type.percentage}%</span>
                         </div>
                       </div>
                     ))}

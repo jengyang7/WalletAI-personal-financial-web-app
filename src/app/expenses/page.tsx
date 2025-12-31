@@ -626,7 +626,10 @@ export default function Expenses() {
     <div className="p-4 md:p-6 bg-[var(--background)] min-h-screen transition-colors duration-300">
       {/* Header */}
       <div className="mb-6 md:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 animate-slide-in-up">
-        <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] pl-16 lg:pl-0">Expenses</h1>
+        <div className="pl-16 lg:pl-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">Expenses</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)]">Track and manage your spending</p>
+        </div>
         <MonthSelector
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}

@@ -4,35 +4,35 @@
 :root {
   /* Global UI scale (change this to resize the whole app) */
   --ui-scale: 1.0;
-  
+
   /* Light Mode Colors */
   --background: #f5f5f7;
   --background-elevated: #ffffff;
   --foreground: #1d1d1f;
   --foreground-secondary: #86868b;
-  
+
   /* Glass Effect Variables */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.18);
   --glass-shadow: rgba(0, 0, 0, 0.1);
-  
+
   /* Accent Colors */
   --accent-primary: #007aff;
   --accent-primary-hover: #0051d5;
   --accent-success: #34c759;
   --accent-warning: #ff9500;
   --accent-error: #ff3b30;
-  
+
   /* Card & Surface Colors */
   --card-bg: rgba(255, 255, 255, 0.8);
   --card-border: rgba(0, 0, 0, 0.08);
   --card-hover: rgba(255, 255, 255, 0.95);
-  
+
   /* Sidebar Colors */
   --sidebar-bg: #ffffff;
   --sidebar-hover: rgba(0, 0, 0, 0.05);
   --sidebar-active: rgba(0, 122, 255, 0.15);
-  
+
   /* Text Colors */
   --text-primary: #1d1d1f;
   --text-secondary: #86868b;
@@ -45,29 +45,29 @@
   --background-elevated: #1e1e1e;
   --foreground: #f5f5f7;
   --foreground-secondary: #a1a1aa;
-  
+
   /* Glass Effect Variables */
   --glass-bg: rgba(30, 30, 30, 0.7);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: rgba(0, 0, 0, 0.4);
-  
+
   /* Accent Colors */
   --accent-primary: #0a84ff;
   --accent-primary-hover: #409cff;
   --accent-success: #30d158;
   --accent-warning: #ff9f0a;
   --accent-error: #ff453a;
-  
+
   /* Card & Surface Colors */
   --card-bg: rgba(30, 30, 30, 0.6);
   --card-border: rgba(255, 255, 255, 0.08);
   --card-hover: rgba(40, 40, 40, 0.8);
-  
+
   /* Sidebar Colors */
   --sidebar-bg: #121212;
   --sidebar-hover: rgba(255, 255, 255, 0.05);
   --sidebar-active: rgba(10, 132, 255, 0.15);
-  
+
   /* Text Colors */
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1aa;
@@ -154,12 +154,14 @@ body {
 }
 
 .sidebar-nav-hover:hover {
-  background-color: rgb(203 213 225); /* slate-300 */
+  background-color: rgb(203 213 225);
+  /* slate-300 */
   color: white;
 }
 
 .dark .sidebar-nav-hover:hover {
-  background-color: rgba(255, 255, 255, 0.1); /* white/10 */
+  background-color: rgba(255, 255, 255, 0.1);
+  /* white/10 */
   color: white;
 }
 
@@ -169,6 +171,7 @@ body {
     transform: translateY(20px);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -180,6 +183,7 @@ body {
     transform: translateX(-20px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -191,6 +195,7 @@ body {
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
@@ -201,6 +206,7 @@ body {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
@@ -279,9 +285,12 @@ body {
 
 /* Floating Animation */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -317,9 +326,12 @@ body {
 
 /* Pulse Animation */
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -340,5 +352,35 @@ button:disabled {
 
 /* Improve native select spacing (text padding), keep native arrow */
 select {
-  padding-right: 2rem !important; /* extra space between text and the right edge/arrow */
+  padding-right: 2rem !important;
+  /* extra space between text and the right edge/arrow */
+}
+
+/* Net Worth tile container query */
+/* Default: hide amount, show percentage without parentheses */
+.net-worth-amount {
+  display: none;
+}
+
+.net-worth-pct-with-parens {
+  display: none;
+}
+
+.net-worth-pct-no-parens {
+  display: inline;
+}
+
+/* When tile is wide enough (> 450px): show amount and percentage with parentheses */
+@container (min-width: 450px) {
+  .net-worth-amount {
+    display: inline;
+  }
+
+  .net-worth-pct-with-parens {
+    display: inline;
+  }
+
+  .net-worth-pct-no-parens {
+    display: none;
+  }
 }

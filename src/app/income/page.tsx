@@ -281,7 +281,8 @@ export default function IncomePage() {
 
       if (error) throw error;
 
-      setIncome([data, ...income]);
+      // Add to local state and sort by date (newest first)
+      setIncome([...income, data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
       setShowReviewModal(false);
       setReviewData(null);
@@ -312,7 +313,8 @@ export default function IncomePage() {
 
         if (error) throw error;
 
-        setIncome([data, ...income]);
+        // Add to local state and sort by date (newest first)
+        setIncome([...income, data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
         const defaultWallet = wallets.find(w => w.is_default);
         setNewIncome({

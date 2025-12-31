@@ -215,8 +215,8 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      // Add to local state
-      setExpenses(prev => [data, ...prev]);
+      // Add to local state and sort by date (newest first)
+      setExpenses(prev => [...prev, data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
       // Reload budgets to update spent amounts
       await reloadBudgets();
