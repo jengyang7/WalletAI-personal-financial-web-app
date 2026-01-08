@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X, Sparkles, Zap, Send, Loader2, Check, Wallet } from 'lucide-react';
+import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X, Sparkles, Zap, Send, Loader2, Check, Wallet, Camera } from 'lucide-react';
 import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { useFinance, type Subscription } from '@/context/FinanceContext';
 import { useMonth } from '@/context/MonthContext';
@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
-import { autoCategorize, parseMultipleExpenses, type ParsedExpenseItem } from '@/lib/autoCategorization';
+import { autoCategorize, parseMultipleExpenses, parseReceiptImage, type ParsedExpenseItem } from '@/lib/autoCategorization';
 import { Wallet as WalletType, getWallets, ensureDefaultWallet } from '@/lib/wallets';
 
 interface Expense {
@@ -46,8 +46,28 @@ export default function Expenses() {
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
   const [userSettings, setUserSettings] = useState<{ currency?: string; ai_auto_add?: boolean;[key: string]: unknown } | null>(null);
-  const [successToast, setSuccessToast] = useState<{ show: boolean; count: number; total: number } | null>(null);
-  const [processingStep, setProcessingStep] = useState<{ step: 'parsing' | 'adding' | 'done'; current: number; total: number } | null>(null);
+  const [successToast, setSuccessToast] = useState<{
+    show: boolean;
+    count: number;
+    total: number;
+    expenses: Array<{ description: string; amount: number; currency: string; date: string }>;
+  } | null>(null);
+
+  // Delete confirmation modal state
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    show: boolean;
+    expenseId: string;
+    description: string;
+    amount: number;
+    currency: string;
+    date: string;
+    category: string;
+  } | null>(null);
+
+  // Generic alert modal state (replaces browser alert())
+  const [alertModal, setAlertModal] = useState<{ show: boolean; title: string; message: string; type: 'error' | 'success' | 'info' } | null>(null);
+
+  const [processingStep, setProcessingStep] = useState<{ step: 'processing' | 'adding' | 'done'; current: number; total: number } | null>(null);
 
   // Helper to get date based on selected month with today's day
   const getDateForSelectedMonth = () => {
@@ -142,6 +162,11 @@ export default function Expenses() {
     category: string;
     wallet_id: string;
   }>>([]);
+
+  // Receipt OCR states
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
 
   // Wallet state
   const [wallets, setWallets] = useState<WalletType[]>([]);
@@ -426,7 +451,8 @@ export default function Expenses() {
 
   // Handle AI input processing
   const handleAIProcess = async () => {
-    if (!aiInput.trim()) return;
+    // Must have either text input or receipt image
+    if (!aiInput.trim() && !receiptFile) return;
 
     // Clear input immediately for better UX
     const inputText = aiInput;
@@ -435,15 +461,23 @@ export default function Expenses() {
     setIsProcessing(true);
     try {
       const userCurrency = userSettings?.currency || 'USD';
+      const defaultDate = getDateForSelectedMonth();
 
-      // Step 1: Parsing
+      // Step 1: Processing
       if (userSettings?.ai_auto_add) {
-        setProcessingStep({ step: 'parsing', current: 0, total: 0 });
+        setProcessingStep({ step: 'processing', current: 0, total: 0 });
       }
 
-      // Pass the selected month's date so AI uses it as default when no date is mentioned
-      const defaultDate = getDateForSelectedMonth();
-      const result = await parseMultipleExpenses(inputText, userCurrency, defaultDate);
+      // Use receipt OCR if image is provided, otherwise use text parsing
+      let result;
+      if (receiptFile) {
+        result = await parseReceiptImage(receiptFile, userCurrency, defaultDate);
+        // Clear receipt after processing
+        setReceiptFile(null);
+        setReceiptPreview(null);
+      } else {
+        result = await parseMultipleExpenses(inputText, userCurrency, defaultDate);
+      }
 
       // Get default wallet
       const defaultWallet = wallets.find(w => w.is_default);
@@ -465,11 +499,11 @@ export default function Expenses() {
         const validExpenses = expenses.filter(exp => exp.amount && parseFloat(exp.amount) > 0);
         if (validExpenses.length === 0) {
           setProcessingStep(null);
-          alert('No valid expenses found. Please check your input.');
+          showAlert('No Expenses Found', 'No valid expenses found. Please check your input or receipt image.', 'error');
           return;
         }
 
-        // Track earliest date for scrolling
+        // Track earliest date for scrolling and month switching
         const firstExpenseDate = validExpenses.reduce((earliest, exp) => {
           return exp.date < earliest ? exp.date : earliest;
         }, validExpenses[0].date);
@@ -478,6 +512,7 @@ export default function Expenses() {
         setProcessingStep({ step: 'adding', current: 0, total: validExpenses.length });
         setIsAddingExpense(true);
         let totalAmount = 0;
+        const addedExpenses: Array<{ description: string; amount: number; currency: string; date: string }> = [];
 
         for (let i = 0; i < validExpenses.length; i++) {
           const exp = validExpenses[i];
@@ -492,17 +527,35 @@ export default function Expenses() {
             wallet_id: exp.wallet_id || undefined
           });
           totalAmount += parseFloat(exp.amount);
+          addedExpenses.push({
+            description: exp.description,
+            amount: parseFloat(exp.amount),
+            currency: exp.currency,
+            date: exp.date
+          });
         }
 
         // Step 3: Done
         setProcessingStep({ step: 'done', current: validExpenses.length, total: validExpenses.length });
         setIsAddingExpense(false);
 
-        // Show success toast and scroll to added expenses
+        // Show success toast with expense details (max 5) and switch to expense month if different
         setTimeout(() => {
           setProcessingStep(null);
-          setSuccessToast({ show: true, count: validExpenses.length, total: totalAmount });
-          setTimeout(() => setSuccessToast(null), 4000);
+
+          // Switch to the expense month if different from currently selected
+          const expenseMonth = firstExpenseDate.substring(0, 7); // YYYY-MM
+          if (selectedMonth !== expenseMonth && selectedMonth !== 'all') {
+            setSelectedMonth(expenseMonth);
+          }
+
+          setSuccessToast({
+            show: true,
+            count: validExpenses.length,
+            total: totalAmount,
+            expenses: addedExpenses.slice(0, 5) // Max 5 expenses shown
+          });
+          setTimeout(() => setSuccessToast(null), 5000); // Longer timeout to read details
 
           // Scroll to the first added expense (using date as identifier)
           setTimeout(() => {
@@ -510,7 +563,7 @@ export default function Expenses() {
             if (expenseElement) {
               expenseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
-          }, 100);
+          }, 300); // Slightly longer delay to allow month change to render
         }, 500);
       } else {
         // Review mode: show review modal
@@ -520,9 +573,45 @@ export default function Expenses() {
     } catch (error) {
       console.error('Error processing AI input:', error);
       setProcessingStep(null);
-      alert('Failed to process expense. Please try again.');
+      showAlert('Processing Failed', 'Failed to process expense. Please try again.', 'error');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Handle receipt file selection
+  const handleReceiptSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showAlert('Invalid File', 'Please select an image file.', 'error');
+      return;
+    }
+
+    // Validate file size (max 7MB for Gemini API)
+    if (file.size > 7 * 1024 * 1024) {
+      showAlert('File Too Large', 'Image file is too large. Maximum size is 7MB.', 'error');
+      return;
+    }
+
+    setReceiptFile(file);
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReceiptPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Clear selected receipt
+  const clearReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    if (receiptInputRef.current) {
+      receiptInputRef.current.value = '';
     }
   };
 
@@ -608,10 +697,32 @@ export default function Expenses() {
     }
   };
 
-  const handleDeleteExpense = async (expenseId: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  // Show delete confirmation modal with full expense details
+  const showDeleteConfirm = (expense: { id: string; description: string; amount: number; currency: string; date: string; category: string }) => {
+    setDeleteConfirmModal({
+      show: true,
+      expenseId: expense.id,
+      description: expense.description,
+      amount: expense.amount,
+      currency: expense.currency,
+      date: expense.date,
+      category: expense.category
+    });
+  };
 
+  // Show custom alert modal (replaces browser alert())
+  const showAlert = (title: string, message: string, type: 'error' | 'success' | 'info' = 'info') => {
+    setAlertModal({ show: true, title, message, type });
+  };
+
+  // Confirm and execute delete
+  const confirmDeleteExpense = async () => {
+    if (!deleteConfirmModal) return;
+
+    const expenseId = deleteConfirmModal.expenseId;
+    setDeleteConfirmModal(null);
     setDeletingExpense(expenseId);
+
     try {
       const { error } = await supabase
         .from('expenses')
@@ -624,7 +735,7 @@ export default function Expenses() {
       await reloadExpenses();
     } catch (error) {
       console.error('Error deleting expense:', error);
-      alert('Failed to delete expense');
+      showAlert('Delete Failed', 'Failed to delete expense.', 'error');
     } finally {
       setDeletingExpense(null);
     }
@@ -656,7 +767,7 @@ export default function Expenses() {
       await reloadExpenses();
     } catch (error) {
       console.error('Error updating expense:', error);
-      alert('Failed to update expense');
+      showAlert('Update Failed', 'Failed to update expense.', 'error');
     }
   };
 
@@ -695,7 +806,7 @@ export default function Expenses() {
       await reloadSubscriptions();
     } catch (error) {
       console.error('Error adding subscription:', error);
-      alert('Failed to add subscription');
+      showAlert('Add Failed', 'Failed to add subscription.', 'error');
     }
   };
 
@@ -723,7 +834,7 @@ export default function Expenses() {
       await reloadSubscriptions();
     } catch (error) {
       console.error('Error updating subscription:', error);
-      alert('Failed to update subscription');
+      showAlert('Update Failed', 'Failed to update subscription.', 'error');
     }
   };
 
@@ -740,7 +851,7 @@ export default function Expenses() {
       await reloadSubscriptions();
     } catch (error) {
       console.error('Error deleting subscription:', error);
-      alert('Failed to delete subscription');
+      showAlert('Delete Failed', 'Failed to delete subscription.', 'error');
     }
   };
 
@@ -769,10 +880,10 @@ export default function Expenses() {
         .eq('id', subscription.id);
 
       await reloadSubscriptions();
-      alert('Subscription applied to expenses!');
+      showAlert('Subscription Applied', 'Subscription applied to expenses!', 'success');
     } catch (error) {
       console.error('Error applying subscription:', error);
-      alert('Failed to apply subscription');
+      showAlert('Apply Failed', 'Failed to apply subscription.', 'error');
     }
   };
 
@@ -781,24 +892,52 @@ export default function Expenses() {
       {/* Success Toast for Auto-Add - Centered at top */}
       {successToast?.show && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-slide-in-up">
-          <div className="glass-card bg-green-500/10 border border-green-500/40 rounded-xl px-6 py-4 shadow-lg flex items-center gap-3">
-            <div className="bg-green-500 rounded-full p-1.5">
-              <Check className="h-5 w-5 text-white" />
+          <div className="glass-card bg-green-500/10 border border-green-500/40 rounded-xl px-5 py-4 shadow-lg max-w-sm">
+            <div className="flex items-start gap-3">
+              <div className="bg-green-500 rounded-full p-1.5 mt-0.5">
+                <Check className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[var(--text-primary)] font-semibold text-sm">
+                  Added {successToast.count} expense{successToast.count > 1 ? 's' : ''}
+                </p>
+                {/* Expense details list (max 5) */}
+                <div className="mt-2 space-y-1.5">
+                  {successToast.expenses.map((exp, i) => (
+                    <div key={i} className="text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[var(--text-secondary)] truncate mr-2">{exp.description}</span>
+                        <span className="text-[var(--text-primary)] font-medium whitespace-nowrap">
+                          {getCurrencySymbol(exp.currency)}{exp.amount.toFixed(2)}
+                        </span>
+                      </div>
+                      <span className="text-[var(--text-tertiary)] text-[10px]">
+                        {new Date(exp.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                  ))}
+                  {successToast.count > 5 && (
+                    <p className="text-[var(--text-tertiary)] text-xs">
+                      +{successToast.count - 5} more...
+                    </p>
+                  )}
+                </div>
+                <div className="mt-2 pt-2 border-t border-[var(--card-border)]">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[var(--text-secondary)]">Total:</span>
+                    <span className="text-[var(--text-primary)] font-semibold">
+                      {getCurrencySymbol(userSettings?.currency || 'USD')}{successToast.total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSuccessToast(null)}
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <div>
-              <p className="text-[var(--text-primary)] font-semibold">
-                Added {successToast.count} expense{successToast.count > 1 ? 's' : ''}
-              </p>
-              <p className="text-[var(--text-secondary)] text-sm">
-                Total: {getCurrencySymbol(userSettings?.currency || 'USD')}{successToast.total.toFixed(2)}
-              </p>
-            </div>
-            <button
-              onClick={() => setSuccessToast(null)}
-              className="ml-3 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
         </div>
       )}
@@ -866,15 +1005,52 @@ export default function Expenses() {
             {isAIMode ? (
               <div className="space-y-4">
                 <p className="text-m text-[var(--text-secondary)] text-center">
-                  Just describe your expense naturally, we&apos;ll handle the rest
+                  Describe your expense or scan a receipt
                 </p>
+
+                {/* Hidden file input for receipt */}
+                <input
+                  ref={receiptInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleReceiptSelect}
+                  className="hidden"
+                  id="receipt-upload"
+                />
+
+                {/* Receipt Preview */}
+                {receiptPreview && (
+                  <div className="relative animate-fade-in">
+                    <div className="relative rounded-xl overflow-hidden border border-[var(--card-border)] bg-[var(--card-bg)]">
+                      <img
+                        src={receiptPreview}
+                        alt="Receipt preview"
+                        className="w-full h-32 object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between">
+                        <span className="text-white text-sm font-medium flex items-center gap-1">
+                          <Camera className="h-4 w-4" />
+                          Receipt ready to scan
+                        </span>
+                        <button
+                          onClick={clearReceipt}
+                          className="p-1.5 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+                          title="Remove receipt"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="relative">
                   <textarea
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
-                    placeholder="Try: 'Coffee this morning RM 12' or 'Grab ride yesterday $25' or 'Dinner with friends $80'"
-                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-4 py-3 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-none"
+                    placeholder={receiptFile ? "Add a note (optional)..." : "Try: 'Coffee this morning RM 12' or 'Grab ride yesterday $25'"}
+                    className="w-full glass-card border border-[var(--card-border)] rounded-xl transition-all duration-300 px-4 py-3 pr-24 text-[var(--text-primary)] placeholder-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px] resize-none"
                     disabled={isProcessing && userSettings?.ai_auto_add}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -883,13 +1059,29 @@ export default function Expenses() {
                       }
                     }}
                   />
-                  <button
-                    onClick={handleAIProcess}
-                    disabled={!aiInput.trim() || (isProcessing && userSettings?.ai_auto_add)}
-                    className="absolute bottom-3 right-3 p-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
-                  >
-                    <Send className="h-5 w-5" />
-                  </button>
+                  {/* Button row */}
+                  <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                    {/* Receipt upload button */}
+                    <button
+                      onClick={() => receiptInputRef.current?.click()}
+                      disabled={isProcessing && userSettings?.ai_auto_add}
+                      className={`p-2 rounded-xl transition-all duration-300 ${receiptFile
+                        ? 'bg-green-500 text-white'
+                        : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--text-secondary)] hover:text-blue-400 hover:border-blue-400'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title="Scan receipt"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </button>
+                    {/* Send button */}
+                    <button
+                      onClick={handleAIProcess}
+                      disabled={(!aiInput.trim() && !receiptFile) || (isProcessing && userSettings?.ai_auto_add)}
+                      className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:opacity-90 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg"
+                    >
+                      <Send className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Processing Steps - Inline below input */}
@@ -897,12 +1089,12 @@ export default function Expenses() {
                   <div className="animate-fade-in">
                     <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {processingStep.step === 'parsing' && (
+                        {processingStep.step === 'processing' && (
                           <>
                             <Loader2 className="h-5 w-5 text-blue-400 animate-spin" />
                             <div>
-                              <p className="text-[var(--text-primary)] font-medium text-sm">Parsing expenses...</p>
-                              <p className="text-[var(--text-secondary)] text-xs">Analyzing your input with AI</p>
+                              <p className="text-[var(--text-primary)] font-medium text-sm">Processing...</p>
+                              <p className="text-[var(--text-secondary)] text-xs">Analyzing with AI</p>
                             </div>
                           </>
                         )}
@@ -1303,7 +1495,14 @@ export default function Expenses() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleDeleteExpense(expense.id);
+                                          showDeleteConfirm({
+                                            id: expense.id,
+                                            description: expense.description,
+                                            amount: expense.amount,
+                                            currency: expense.currency || profileCurrency,
+                                            date: expense.date,
+                                            category: expense.category
+                                          });
                                         }}
                                         disabled={deletingExpense === expense.id}
                                         className="p-2 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
@@ -1681,6 +1880,91 @@ export default function Expenses() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmModal?.show && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="glass-card rounded-2xl p-6 max-w-sm w-full border border-[var(--card-border)] shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-full bg-red-500/20">
+                <Trash2 className="h-5 w-5 text-red-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Delete Expense</h3>
+            </div>
+
+            <p className="text-[var(--text-secondary)] mb-3">
+              Are you sure you want to delete this expense?
+            </p>
+
+            {/* Expense Card Preview */}
+            <div className="glass-card rounded-xl p-4 mb-6 border border-[var(--card-border)]">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-[var(--text-primary)] font-medium truncate">{deleteConfirmModal.description}</h4>
+                  <p className="text-[var(--text-secondary)] text-sm">{deleteConfirmModal.category}</p>
+                </div>
+                <p className="text-red-400 font-semibold whitespace-nowrap ml-3">
+                  -{getCurrencySymbol(deleteConfirmModal.currency)}{deleteConfirmModal.amount.toFixed(2)}
+                </p>
+              </div>
+              <p className="text-[var(--text-tertiary)] text-xs">
+                {new Date(deleteConfirmModal.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmModal(null)}
+                className="flex-1 bg-[var(--card-bg)] hover:bg-[var(--card-border)] text-[var(--text-primary)] py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold border border-[var(--card-border)]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteExpense}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generic Alert Modal */}
+      {alertModal?.show && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="glass-card rounded-2xl p-6 max-w-sm w-full border border-[var(--card-border)] shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-full ${alertModal.type === 'error' ? 'bg-red-500/20' :
+                  alertModal.type === 'success' ? 'bg-green-500/20' : 'bg-blue-500/20'
+                }`}>
+                {alertModal.type === 'error' ? (
+                  <X className={`h-5 w-5 text-red-400`} />
+                ) : alertModal.type === 'success' ? (
+                  <Check className={`h-5 w-5 text-green-400`} />
+                ) : (
+                  <Sparkles className={`h-5 w-5 text-blue-400`} />
+                )}
+              </div>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">{alertModal.title}</h3>
+            </div>
+
+            <p className="text-[var(--text-secondary)] mb-6">
+              {alertModal.message}
+            </p>
+
+            <button
+              onClick={() => setAlertModal(null)}
+              className={`w-full py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg ${alertModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 text-white' :
+                  alertModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                    'bg-blue-500 hover:bg-blue-600 text-white'
+                }`}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}

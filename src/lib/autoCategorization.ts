@@ -1000,3 +1000,210 @@ Output: {"expenses": [
 }
 
 
+/**
+ * Parse expense(s) from a receipt image using Gemini 2.5 Flash vision
+ * Extracts: merchant name, items, amounts, currency, date
+ */
+export async function parseReceiptImage(
+  imageFile: File,
+  defaultCurrency: string = 'SGD',
+  defaultDate?: string
+): Promise<{
+  expenses: ParsedExpenseItem[];
+  method: 'gemini-ocr' | 'fallback';
+  merchantName?: string;
+}> {
+  const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  const today = new Date().toISOString().split('T')[0];
+  const effectiveDefaultDate = defaultDate || today;
+
+  if (!apiKey) {
+    console.error('Gemini API key not found');
+    return {
+      expenses: [{
+        description: 'Receipt',
+        amount: null,
+        currency: defaultCurrency,
+        date: effectiveDefaultDate,
+        category: 'Miscellaneous',
+        confidence: 'low'
+      }],
+      method: 'fallback'
+    };
+  }
+
+  try {
+    // Convert image file to base64
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const base64Image = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    // Determine MIME type
+    const mimeType = imageFile.type || 'image/jpeg';
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Image
+                }
+              },
+              {
+                text: `You are a receipt OCR assistant. Analyze this receipt image and extract the expense information.
+
+User's default currency: ${defaultCurrency}
+Today's date: ${today}
+
+Available categories: ${CATEGORY_OPTIONS.join(', ')}
+
+Respond with JSON in this exact format:
+{
+  "merchantName": "Store/Restaurant name from receipt",
+  "receiptDate": "YYYY-MM-DD format (date shown on receipt, or null if not visible)",
+  "totalAmount": number (TOTAL amount on receipt INCLUDING tax/service charge),
+  "currency": "${defaultCurrency}",
+  "category": "one of the available categories",
+  "mealType": "Breakfast/Lunch/Dinner/Snack/null (for restaurants based on time or context)",
+  "confidence": "high/medium/low"
+}
+
+Rules:
+1. Create ONE expense per receipt with the TOTAL amount (including tax, service charge, tips)
+2. Currency detection:
+   - Look for currency symbols on receipt ($, RM, S$, €, £, ¥)
+   - RM = MYR (Malaysian Ringgit)
+   - S$ = SGD (Singapore Dollar)
+   - $ alone in ${defaultCurrency === 'MYR' || defaultCurrency === 'SGD' ? 'this region likely means ' + defaultCurrency : 'USD'}
+   - If unclear, use ${defaultCurrency}
+3. For category, consider:
+   - Restaurants/cafes/food courts → "Food & Dining"
+   - Supermarkets/grocery stores → "Groceries"
+   - Gas/petrol stations → "Transportation"
+   - Pharmacies/clinics → "Healthcare"
+   - Retail/clothing/electronics stores → "Shopping"
+4. For mealType (restaurants/cafes only):
+   - Before 11am → "Breakfast"
+   - 11am-3pm → "Lunch"  
+   - 3pm-6pm → "Snack"
+   - After 6pm → "Dinner"
+   - If time unclear, infer from context or set null
+5. Use the GRAND TOTAL / TOTAL amount (after tax), not subtotals
+6. If receipt is unreadable or not a receipt, return empty values
+
+Example output for a restaurant receipt:
+{
+  "merchantName": "Starbucks",
+  "receiptDate": "2024-01-15",
+  "totalAmount": 12.50,
+  "currency": "SGD",
+  "category": "Food & Dining",
+  "mealType": "Lunch",
+  "confidence": "high"
+}
+
+Example output for a supermarket receipt:
+{
+  "merchantName": "Cold Storage",
+  "receiptDate": "2024-01-15", 
+  "totalAmount": 85.40,
+  "currency": "SGD",
+  "category": "Groceries",
+  "mealType": null,
+  "confidence": "high"
+}`
+              }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 1,
+            topP: 0.95,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini OCR API error:', errorText);
+      throw new Error('Gemini OCR API request failed');
+    }
+
+    const data = await response.json();
+    const textResponse = data.candidates[0]?.content?.parts[0]?.text;
+
+    if (!textResponse) {
+      throw new Error('No response from Gemini OCR');
+    }
+
+    const result = JSON.parse(textResponse);
+    const merchantName = result.merchantName || 'Receipt';
+    const receiptDate = result.receiptDate || effectiveDefaultDate;
+    const totalAmount = result.totalAmount;
+    const currency = result.currency || defaultCurrency;
+    const category = CATEGORY_OPTIONS.includes(result.category || '') ? result.category : 'Miscellaneous';
+    const mealType = result.mealType;
+    const confidence = result.confidence || 'medium';
+
+    // Build description: "Meal at Merchant" for restaurants, just merchant for others
+    let description = merchantName;
+    if (mealType && category === 'Food & Dining') {
+      description = `${mealType} at ${merchantName}`;
+    }
+
+    // If no amount was extracted, return with null amount
+    if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+      return {
+        expenses: [{
+          description,
+          amount: null,
+          currency,
+          date: receiptDate,
+          category,
+          confidence: 'low' as const
+        }],
+        method: 'gemini-ocr',
+        merchantName
+      };
+    }
+
+    // Return single expense with total amount
+    return {
+      expenses: [{
+        description,
+        amount: totalAmount,
+        currency,
+        date: receiptDate,
+        category,
+        confidence
+      }],
+      method: 'gemini-ocr',
+      merchantName
+    };
+
+  } catch (error) {
+    console.error('Receipt OCR error:', error);
+    return {
+      expenses: [{
+        description: 'Receipt',
+        amount: null,
+        currency: defaultCurrency,
+        date: effectiveDefaultDate,
+        category: 'Miscellaneous',
+        confidence: 'low'
+      }],
+      method: 'fallback'
+    };
+  }
+}
+
