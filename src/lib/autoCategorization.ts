@@ -797,7 +797,8 @@ export interface ParsedExpenseItem {
  */
 export async function parseMultipleExpenses(
   input: string,
-  defaultCurrency: string = 'USD'
+  defaultCurrency: string = 'SGD',
+  defaultDate?: string // Optional: Date to use when no date is mentioned (e.g., from selected month)
 ): Promise<{
   expenses: ParsedExpenseItem[];
   method: 'gemini' | 'fallback';
@@ -805,6 +806,8 @@ export async function parseMultipleExpenses(
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   const today = new Date().toISOString().split('T')[0];
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // Use provided defaultDate or fall back to today
+  const effectiveDefaultDate = defaultDate || today;
 
   // Try Gemini API
   if (apiKey) {
@@ -850,9 +853,10 @@ Rules:
    - £ → GBP
    - ¥ → JPY
 4. Date handling:
-   - "today" or no date → ${today}
-   - "yesterday" or "last night" → ${yesterday}
-   - Relative dates like "2 days ago" → calculate from today
+   - If user explicitly says "today" → ${today}
+   - If user explicitly says "yesterday" or "last night" → ${yesterday}
+   - Relative dates like "2 days ago" → calculate from today (${today})
+   - If NO date is mentioned at all → use ${effectiveDefaultDate}
    - If a single date is mentioned, apply it to all expenses in that input
 5. Description: Clean item/merchant name only, no amounts/dates/filler words
 6. If input contains only ONE expense, return array with single item
@@ -861,8 +865,8 @@ Examples:
 
 Input: "coffee $5, lunch $15"
 Output: {"expenses": [
-  {"description": "Coffee", "amount": 5, "currency": "${defaultCurrency}", "date": "${today}", "category": "Food & Dining", "confidence": "high"},
-  {"description": "Lunch", "amount": 15, "currency": "${defaultCurrency}", "date": "${today}", "category": "Food & Dining", "confidence": "high"}
+  {"description": "Coffee", "amount": 5, "currency": "${defaultCurrency}", "date": "${effectiveDefaultDate}", "category": "Food & Dining", "confidence": "high"},
+  {"description": "Lunch", "amount": 15, "currency": "${defaultCurrency}", "date": "${effectiveDefaultDate}", "category": "Food & Dining", "confidence": "high"}
 ]}
 
 Input: "yesterday: starbucks RM12, grab to office RM25, groceries RM80"
@@ -874,8 +878,8 @@ Output: {"expenses": [
 
 Input: "I spent $50 on dinner and $30 on uber"  
 Output: {"expenses": [
-  {"description": "Dinner", "amount": 50, "currency": "${defaultCurrency}", "date": "${today}", "category": "Food & Dining", "confidence": "high"},
-  {"description": "Uber", "amount": 30, "currency": "${defaultCurrency}", "date": "${today}", "category": "Transportation", "confidence": "high"}
+  {"description": "Dinner", "amount": 50, "currency": "${defaultCurrency}", "date": "${effectiveDefaultDate}", "category": "Food & Dining", "confidence": "high"},
+  {"description": "Uber", "amount": 30, "currency": "${defaultCurrency}", "date": "${effectiveDefaultDate}", "category": "Transportation", "confidence": "high"}
 ]}`
               }]
             }],
@@ -955,7 +959,7 @@ Output: {"expenses": [
         description: exp.description || 'Expense',
         amount: typeof exp.amount === 'number' ? exp.amount : null,
         currency: exp.currency || defaultCurrency,
-        date: exp.date || today,
+        date: exp.date || effectiveDefaultDate,
         category: CATEGORY_OPTIONS.includes(exp.category) ? exp.category : 'Miscellaneous',
         confidence: exp.confidence || 'medium'
       }));
@@ -965,7 +969,7 @@ Output: {"expenses": [
           description: input,
           amount: null,
           currency: defaultCurrency,
-          date: today,
+          date: effectiveDefaultDate,
           category: 'Miscellaneous',
           confidence: 'low'
         }],
@@ -987,11 +991,12 @@ Output: {"expenses": [
       description: singleResult.cleanedDescription || input,
       amount: singleResult.extractedAmount || null,
       currency: singleResult.extractedCurrency || defaultCurrency,
-      date: singleResult.extractedDate || today,
+      date: singleResult.extractedDate || effectiveDefaultDate,
       category: singleResult.category,
       confidence: singleResult.confidence || 'low'
     }],
     method: 'fallback'
   };
 }
+
 

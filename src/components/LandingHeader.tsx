@@ -65,7 +65,14 @@ export default function LandingHeader() {
                                 <Sun className="h-5 w-5 text-[var(--text-primary)]" />
                             )}
                         </button>
-                        
+
+                        <button
+                            onClick={() => handleAuthClick('/login?demo=true')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-1.5"
+                        >
+                            <span>🚀</span>
+                            <span>Try Demo</span>
+                        </button>
                         <button
                             onClick={() => handleAuthClick('/login')}
                             className="px-5 py-2.5 text-[var(--text-primary)] font-medium hover:text-[var(--accent-primary)] transition-colors"
@@ -115,7 +122,7 @@ export default function LandingHeader() {
                                 Demo
                             </a>
                             <hr className="border-[var(--glass-border)]" />
-                            
+
                             {/* Theme Toggle - Mobile */}
                             <button
                                 onClick={toggleTheme}
@@ -133,8 +140,18 @@ export default function LandingHeader() {
                                     </>
                                 )}
                             </button>
-                            
+
                             <hr className="border-[var(--glass-border)]" />
+                            <button
+                                onClick={() => {
+                                    setMobileMenuOpen(false);
+                                    handleAuthClick('/login?demo=true');
+                                }}
+                                className="px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl shadow-lg text-center flex items-center justify-center gap-2"
+                            >
+                                <span>🚀</span>
+                                <span>Try Demo</span>
+                            </button>
                             <button
                                 onClick={() => {
                                     setMobileMenuOpen(false);

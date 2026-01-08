@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { CreditCard, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
@@ -15,6 +15,15 @@ export default function Login() {
 
   const { signIn } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Auto-fill demo credentials when ?demo=true is in the URL
+  useEffect(() => {
+    if (searchParams.get('demo') === 'true') {
+      setEmail('walletai.demoacc@gmail.com');
+      setPassword('Demo1234!');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +70,8 @@ export default function Login() {
               </div>
             </div>
           </div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
-            <p className="text-sm md:text-base text-[var(--text-secondary)] mt-2">Your AI-powered financial assistant</p>
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)] mt-2">Your AI-powered financial assistant</p>
         </div>
 
         {/* Login Form */}
@@ -137,6 +146,28 @@ export default function Login() {
               {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Demo Account Section */}
+          <div className="mt-6 pt-6 border-t border-[var(--card-border)]">
+            <p className="text-center text-[var(--text-secondary)] text-sm mb-3">
+              👋 <span className="font-medium">Recruiter?</span> Try the app instantly
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('walletai.demoacc@gmail.com');
+                setPassword('Demo1234!');
+              }}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+            >
+              <span>🚀</span>
+              Use Demo Account
+            </button>
+            <p className="text-center text-[var(--text-tertiary)] text-xs mt-2">
+              Click above, then Sign In to explore
+            </p>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-[var(--text-secondary)] text-sm">

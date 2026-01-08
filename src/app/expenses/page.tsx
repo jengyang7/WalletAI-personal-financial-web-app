@@ -441,13 +441,12 @@ export default function Expenses() {
         setProcessingStep({ step: 'parsing', current: 0, total: 0 });
       }
 
-      const result = await parseMultipleExpenses(inputText, userCurrency);
+      // Pass the selected month's date so AI uses it as default when no date is mentioned
+      const defaultDate = getDateForSelectedMonth();
+      const result = await parseMultipleExpenses(inputText, userCurrency, defaultDate);
 
       // Get default wallet
       const defaultWallet = wallets.find(w => w.is_default);
-
-      // Use extracted date if available, otherwise use selected month with today's day
-      const defaultDate = getDateForSelectedMonth();
 
       // Convert parsed expenses to review format with unique IDs
       const expenses = result.expenses.map((exp, index) => ({

@@ -43,7 +43,7 @@ export default function LandingPage() {
                     {/* Badge */}
                     <div className="inline-flex items-center space-x-2 glass-card rounded-full px-4 md:px-5 py-2 md:py-2.5 mb-6 md:mb-8 animate-slide-in-up">
                         <Sparkles className="h-3 w-3 md:h-4 md:w-4 text-[var(--accent-warning)]" />
-                        <span className="text-xs md:text-sm font-medium text-[var(--text-primary)]">AI-Powered Personal Finance</span>
+                        <span className="text-xs md:text-sm font-medium text-[var(--text-primary)]">AI-Powered Personal Finance Tracker</span>
                     </div>
 
                     {/* Headline */}
@@ -67,6 +67,13 @@ export default function LandingPage() {
                         >
                             <span>Get Started Free</span>
                             <ArrowRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                        <Link
+                            href="/login?demo=true"
+                            className="group px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold text-base md:text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center space-x-2 w-full sm:w-auto justify-center"
+                        >
+                            <span>🚀</span>
+                            <span>Try Demo</span>
                         </Link>
                         <Link
                             href="/login"
