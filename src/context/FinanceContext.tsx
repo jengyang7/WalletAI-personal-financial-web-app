@@ -35,6 +35,15 @@ interface Subscription {
   is_active: boolean;
 }
 
+interface AiExpenseToast {
+  show: boolean;
+  count: number;
+  total: number;
+  currency: string;
+  expenses: Array<{ description: string; amount: number; currency: string; date: string }>;
+  earliestDate: string;
+}
+
 interface FinanceContextType {
   expenses: Expense[];
   budgets: Budget[];
@@ -45,11 +54,13 @@ interface FinanceContextType {
   reloadBudgets: () => Promise<void>;
   reloadSubscriptions: () => Promise<void>;
   isLoading: boolean;
+  aiExpenseToast: AiExpenseToast | null;
+  setAiExpenseToast: (toast: AiExpenseToast | null) => void;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
-export type { Subscription };
+export type { Subscription, AiExpenseToast };
 
 export function FinanceProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -57,6 +68,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [aiExpenseToast, setAiExpenseToast] = useState<AiExpenseToast | null>(null);
 
   // Load data when user is authenticated
   useEffect(() => {
@@ -260,7 +272,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       reloadExpenses,
       reloadBudgets,
       reloadSubscriptions,
-      isLoading
+      isLoading,
+      aiExpenseToast,
+      setAiExpenseToast
     }}>
       {children}
     </FinanceContext.Provider>

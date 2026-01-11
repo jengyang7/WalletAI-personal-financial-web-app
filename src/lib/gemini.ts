@@ -915,7 +915,7 @@ async function getSpendingSummary(userId: string, params: Record<string, unknown
 
     const { data: prevExpenses } = await supabase
       .from('expenses')
-      .select('amount, currency')
+      .select('amount, currency, category')
       .eq('user_id', userId)
       .gte('date', prev_start)
       .lte('date', prev_end);
@@ -930,8 +930,57 @@ async function getSpendingSummary(userId: string, params: Record<string, unknown
     summary.comparison = {
       previous_total: Math.round(prevTotal * 100) / 100,
       change: Math.round(change * 100) / 100,
-      change_percent: Math.round(changePercent * 10) / 10
+      change_percent: Math.round(changePercent * 10) / 10,
+      previous_period_start: prev_start,
+      previous_period_end: prev_end
     };
+
+    // If grouped by category, also include per-category comparison
+    if (params.group_by === 'category' && prevExpenses) {
+      const prevByCategory = prevExpenses.reduce((acc: Record<string, { total: number; count: number }>, e) => {
+        if (!acc[e.category]) {
+          acc[e.category] = { total: 0, count: 0 };
+        }
+        acc[e.category].total += convertCurrency(e.amount, e.currency || 'USD', userCurrency);
+        acc[e.category].count += 1;
+        return acc;
+      }, {});
+
+      // Round totals
+      Object.keys(prevByCategory).forEach(cat => {
+        prevByCategory[cat].total = Math.round(prevByCategory[cat].total * 100) / 100;
+      });
+
+      // Add category comparison to each category in by_category
+      const byCategory = summary.by_category as Record<string, { total: number; count: number; currency: string }> | undefined;
+      if (byCategory) {
+        // Get all categories from both periods
+        const allCategories = new Set([...Object.keys(byCategory), ...Object.keys(prevByCategory)]);
+
+        const categoryComparison: Record<string, {
+          current: number;
+          previous: number;
+          change: number;
+          change_percent: number
+        }> = {};
+
+        allCategories.forEach(cat => {
+          const current = byCategory[cat]?.total || 0;
+          const previous = prevByCategory[cat]?.total || 0;
+          const catChange = current - previous;
+          const catChangePercent = previous > 0 ? ((catChange / previous) * 100) : (current > 0 ? 100 : 0);
+
+          categoryComparison[cat] = {
+            current: Math.round(current * 100) / 100,
+            previous: Math.round(previous * 100) / 100,
+            change: Math.round(catChange * 100) / 100,
+            change_percent: Math.round(catChangePercent * 10) / 10
+          };
+        });
+
+        summary.category_comparison = categoryComparison;
+      }
+    }
   }
 
   return summary;
@@ -1871,6 +1920,40 @@ EXPENSE DATE HANDLING:
 - If the user says "yesterday", calculate the date based on ${dateString}
 - If no date specified for expense, use ${dateString}
 
+CRITICAL - SPENDING COMPARISON QUESTIONS (MUST FOLLOW):
+When users ask SPENDING comparison questions like "Am I spending more than last month?", "How does my dining spending compare?", "compare grocery this month and last month", or "Am I spending more on [category] compared to last month?":
+
+1. Call get_spending_summary with period: "this_month", group_by: "category", include_comparison: true to get the comparison numbers
+2. ALSO call get_expenses TWICE to get the individual expense listings:
+   - get_expenses({ category: "[category]", start_date: "[this_month_start]", end_date: "[this_month_end]" }) for this month's expenses
+   - get_expenses({ category: "[category]", start_date: "[last_month_start]", end_date: "[last_month_end]" }) for last month's expenses
+3. NEVER say "I need to check", "Let me get", "Please allow me a moment" - respond with the comparison AND listings DIRECTLY
+4. The get_spending_summary result includes:
+   - comparison.previous_total and comparison.change_percent for OVERALL spending comparison
+   - category_comparison field with per-category data: { category_name: { current, previous, change, change_percent } }
+5. Present BOTH the summary comparison AND list the individual expenses from both months
+
+CRITICAL EXAMPLES - FOLLOW THESE PATTERNS EXACTLY:
+User: "Compare grocery this month and last month"
+→ Call: get_spending_summary({ period: "this_month", group_by: "category", include_comparison: true })
+→ Call: get_expenses({ category: "Groceries", start_date: "2026-01-01", end_date: "2026-01-31" })
+→ Call: get_expenses({ category: "Groceries", start_date: "2025-12-01", end_date: "2025-12-31" })
+→ Use category_comparison["Groceries"] for the comparison numbers
+→ Respond with:
+  - The comparison: "This month SGD [current] vs last month SGD [previous] ([change_percent]% more/less)"
+  - This month's expenses list
+  - Last month's expenses list
+
+User: "Am I spending more on dining out compared to last month?"
+→ Call: get_spending_summary({ period: "this_month", group_by: "category", include_comparison: true })
+→ Call: get_expenses({ category: "Food & Dining", start_date: "[this_month_start]", end_date: "[this_month_end]" })
+→ Call: get_expenses({ category: "Food & Dining", start_date: "[last_month_start]", end_date: "[last_month_end]" })
+→ Respond with comparison AND expense listings
+
+User: "How does my spending this month compare to last month?" (overall, not category-specific)
+→ Call ONCE: get_spending_summary({ period: "this_month", group_by: "category", include_comparison: true })
+→ Respond with overall comparison and category breakdown (no need to list individual expenses for overall comparison)
+
 OTHER RULES:
 - If multiple expenses in one message, call create_expense multiple times
 - Always report financial totals in ${userCurrency}
@@ -1972,6 +2055,33 @@ User: "Check my food budget"
 
         if (chartData) {
           functionResultObj.chartData = chartData;
+        }
+
+        // Include expense details if create_expense was called (for UI toast)
+        const expenseResults = executionResults.filter(r => r.name === 'create_expense');
+        if (expenseResults.length > 0) {
+          const createdExpenses = expenseResults.map(r => {
+            const expense = r.result?.expense as { description: string; amount: number; currency: string; date: string } | undefined;
+            return expense ? {
+              description: expense.description,
+              amount: expense.amount,
+              currency: expense.currency,
+              date: expense.date
+            } : null;
+          }).filter(Boolean);
+
+          if (createdExpenses.length > 0) {
+            functionResultObj.createdExpenses = createdExpenses;
+            // Calculate total for all created expenses
+            const total = createdExpenses.reduce((sum, exp: { amount: number } | null) => sum + (exp?.amount || 0), 0);
+            functionResultObj.expenseTotal = total;
+            // Get the earliest date for navigation
+            const earliestDate = createdExpenses.reduce((earliest, exp: { date: string } | null) => {
+              if (!exp?.date) return earliest;
+              return exp.date < earliest ? exp.date : earliest;
+            }, createdExpenses[0]?.date || new Date().toISOString().split('T')[0]);
+            functionResultObj.earliestExpenseDate = earliestDate;
+          }
         }
 
         return {

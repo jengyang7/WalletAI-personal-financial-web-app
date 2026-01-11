@@ -42,7 +42,7 @@ const getCategoryIcon = (category: string) => {
 };
 
 export default function Expenses() {
-  const { expenses, addExpense, subscriptions, reloadSubscriptions, reloadExpenses } = useFinance();
+  const { expenses, addExpense, subscriptions, reloadSubscriptions, reloadExpenses, aiExpenseToast, setAiExpenseToast } = useFinance();
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
   const [userSettings, setUserSettings] = useState<{ currency?: string; ai_auto_add?: boolean;[key: string]: unknown } | null>(null);
@@ -52,6 +52,35 @@ export default function Expenses() {
     total: number;
     expenses: Array<{ description: string; amount: number; currency: string; date: string }>;
   } | null>(null);
+
+  // Handle AI-created expense toast - show it and scroll to expense
+  useEffect(() => {
+    if (aiExpenseToast?.show) {
+      // Show the toast using the same format as local toast
+      setSuccessToast({
+        show: true,
+        count: aiExpenseToast.count,
+        total: aiExpenseToast.total,
+        expenses: aiExpenseToast.expenses
+      });
+
+      // Scroll to the newly added expense after a brief delay
+      setTimeout(() => {
+        if (aiExpenseToast.earliestDate) {
+          const expenseElement = document.querySelector(`[data-expense-date="${aiExpenseToast.earliestDate}"]`);
+          if (expenseElement) {
+            expenseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+      }, 300);
+
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        setSuccessToast(null);
+        setAiExpenseToast(null); // Clear the context toast too
+      }, 5000);
+    }
+  }, [aiExpenseToast, setAiExpenseToast]);
 
   // Delete confirmation modal state
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -1939,7 +1968,7 @@ export default function Expenses() {
           <div className="glass-card rounded-2xl p-6 max-w-sm w-full border border-[var(--card-border)] shadow-2xl animate-scale-in">
             <div className="flex items-center gap-3 mb-4">
               <div className={`p-2 rounded-full ${alertModal.type === 'error' ? 'bg-red-500/20' :
-                  alertModal.type === 'success' ? 'bg-green-500/20' : 'bg-blue-500/20'
+                alertModal.type === 'success' ? 'bg-green-500/20' : 'bg-blue-500/20'
                 }`}>
                 {alertModal.type === 'error' ? (
                   <X className={`h-5 w-5 text-red-400`} />
@@ -1959,8 +1988,8 @@ export default function Expenses() {
             <button
               onClick={() => setAlertModal(null)}
               className={`w-full py-2.5 px-4 rounded-xl transition-all duration-300 font-semibold shadow-lg ${alertModal.type === 'error' ? 'bg-red-500 hover:bg-red-600 text-white' :
-                  alertModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 text-white' :
-                    'bg-blue-500 hover:bg-blue-600 text-white'
+                alertModal.type === 'success' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                  'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
             >
               OK

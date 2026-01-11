@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Content } from '@google/genai';
 import { Bot, Send, Sparkles, TrendingUp, Trash2, Zap, Maximize2, Minimize2 } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
@@ -55,9 +56,10 @@ interface AIAdvisorProps {
 }
 
 export default function AIAdvisor({ onClose, onExpand, isExpanded }: AIAdvisorProps = {}) {
-  const { reloadBudgets, reloadExpenses } = useFinance();
+  const router = useRouter();
+  const { reloadBudgets, reloadExpenses, setAiExpenseToast } = useFinance();
   const { user } = useAuth();
-  const { selectedMonth } = useMonth();
+  const { selectedMonth, setSelectedMonth } = useMonth();
   const [message, setMessage] = useState('');
   const [conversationHistory, setConversationHistory] = useState<Content[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -254,7 +256,38 @@ export default function AIAdvisor({ onClose, onExpand, isExpanded }: AIAdvisorPr
       setIsTyping(false);
 
       // Reload data if functions were called that modify data
-      if (response.functionCalled === 'create_expense' || response.functionCalled === 'delete_expenses') {
+      if (response.functionCalled?.includes('create_expense')) {
+        await reloadExpenses();
+        await reloadBudgets();
+
+        // Get created expenses from function result for toast
+        const createdExpenses = response.functionResult?.createdExpenses as Array<{ description: string; amount: number; currency: string; date: string }> | undefined;
+        const expenseTotal = response.functionResult?.expenseTotal as number | undefined;
+        const earliestDate = response.functionResult?.earliestExpenseDate as string | undefined;
+
+        if (createdExpenses && createdExpenses.length > 0 && earliestDate) {
+          // Set toast in context - expenses page will display it
+          setAiExpenseToast({
+            show: true,
+            count: createdExpenses.length,
+            total: expenseTotal || 0,
+            currency: createdExpenses[0]?.currency || 'USD',
+            expenses: createdExpenses.slice(0, 5), // Max 5 for display
+            earliestDate: earliestDate
+          });
+
+          // Switch to the expense month if different from currently selected
+          const expenseMonth = earliestDate.substring(0, 7); // YYYY-MM
+          if (selectedMonth !== expenseMonth && selectedMonth !== 'all') {
+            setSelectedMonth(expenseMonth);
+          }
+
+          // Navigate to expenses page after a brief delay
+          setTimeout(() => {
+            router.push('/expenses');
+          }, 300);
+        }
+      } else if (response.functionCalled?.includes('delete_expenses')) {
         await reloadExpenses();
         await reloadBudgets();
       } else if (response.functionCalled === 'create_budget') {
@@ -399,11 +432,11 @@ export default function AIAdvisor({ onClose, onExpand, isExpanded }: AIAdvisorPr
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] flex items-center justify-center shadow-lg mt-1">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <div className="flex-1 glass-card text-[var(--text-primary)] rounded-2xl rounded-tl-sm px-4 py-4 shadow-lg">
+            <div className="inline-flex glass-card text-[var(--text-primary)] rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg">
               <div className="flex space-x-1.5">
-                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
