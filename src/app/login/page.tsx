@@ -4,7 +4,9 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { CreditCard, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
+import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -14,6 +16,7 @@ function LoginContent() {
   const [error, setError] = useState('');
 
   const { signIn } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -81,15 +84,19 @@ function LoginContent() {
         {/* Logo */}
         <div className="text-center mb-6 md:mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] blur-xl opacity-50 rounded-full"></div>
-              <div className="relative bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-3 rounded-2xl shadow-2xl">
-                <CreditCard className="h-10 w-10 text-white" />
-              </div>
-            </div>
+            <Image
+              src="/wallet-ai-logo.png"
+              alt="WalletAI Logo"
+              width={70}
+              height={70}
+              className="logo"
+            />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">WalletAI</h1>
-          <p className="text-sm md:text-base text-[var(--text-secondary)] mt-2">Your AI-powered financial tracker</p>
+          <h1 className="text-3xl md:text-4xl">
+            <span className="font-bold text-[var(--logo-wallet)]">Wallet</span>
+            <span className="font-bold text-[var(--logo-ai)]">AI</span>
+          </h1>
+          <p className="text-sm md:text-base text-[var(--text-secondary)] mt-2">Your AI-powered financial assistant</p>
         </div>
 
         {/* Login Form */}

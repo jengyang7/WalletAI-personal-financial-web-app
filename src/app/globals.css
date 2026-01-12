@@ -37,6 +37,15 @@
   --text-primary: #1d1d1f;
   --text-secondary: #86868b;
   --text-tertiary: #aeaeb2;
+
+  /* Logo Colors */
+  --logo-wallet: #293b7d;
+  --logo-ai: #56b2ef;
+}
+
+/* Logo dark mode filter */
+.dark .logo {
+  filter: invert(1) brightness(1.1);
 }
 
 .dark {
@@ -72,6 +81,10 @@
   --text-primary: #f5f5f7;
   --text-secondary: #a1a1aa;
   --text-tertiary: #71717a;
+
+  /* Logo Colors */
+  --logo-wallet: #ffffff;
+  --logo-ai: #56b2ef;
 }
 
 @theme inline {

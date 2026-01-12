@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Menu, X, Sun, Moon } from 'lucide-react';
+import { Menu, X, Sun, Moon } from 'lucide-react';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -42,15 +43,17 @@ export default function LandingHeader() {
                     : 'bg-transparent'
                     }`}>
                     {/* Logo */}
-                    <Link href="/" className="flex items-center space-x-3 group flex-shrink-0">
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] blur-lg opacity-50 rounded-xl group-hover:opacity-75 transition-opacity"></div>
-                            <div className="relative bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-2.5 rounded-xl shadow-lg">
-                                <CreditCard className="h-6 w-6 text-white" />
-                            </div>
-                        </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">
-                            WalletAI
+                    <Link href="/" className="flex items-center group flex-shrink-0">
+                        <Image
+                            src="/wallet-ai-logo.png"
+                            alt="WalletAI Logo"
+                            width={36}
+                            height={36}
+                            className="logo group-hover:scale-105 transition-transform duration-300 relative -top-[2px]"
+                        />
+                        <span className="ml-1 text-2xl leading-none">
+                            <span className="font-bold text-[var(--logo-wallet)]">Wallet</span>
+                            <span className="font-bold text-[var(--logo-ai)]">AI</span>
                         </span>
                     </Link>
 

@@ -10,16 +10,15 @@ import {
   TrendingUp,
   Settings,
   LogOut,
-  CreditCard,
   Wallet,
   DollarSign,
-  Sparkles,
   Menu,
   X,
   ChevronUp,
   Sun,
   Moon
 } from 'lucide-react';
+import Image from 'next/image';
 import clsx from 'clsx'
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -95,13 +94,17 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="flex h-28 items-center justify-start px-6 border-b bg-transparent relative" style={{ borderColor: theme === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }}>
           <div className="flex flex-col items-start">
-            <div className="flex items-center">
-              <div className="relative">
-                <CreditCard className="h-8 w-8 text-[var(--accent-primary)]" />
-                <Sparkles className="h-4 w-4 text-[var(--accent-success)] absolute -top-1 -right-1 animate-pulse" />
-              </div>
-              <span className="ml-2 text-2xl font-semibold bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-success)] bg-clip-text text-transparent">
-                WalletAI
+            <div className="flex items-end">
+              <Image
+                src="/wallet-ai-logo.png"
+                alt="WalletAI Logo"
+                width={34}
+                height={34}
+                className="logo relative top-[2px]"
+              />
+              <span className="ml-1 text-2xl leading-none">
+                <span className="font-bold text-[var(--logo-wallet)]">Wallet</span>
+                <span className="font-bold text-[var(--logo-ai)]">AI</span>
               </span>
             </div>
             <span className="text-[13px] text-[var(--text-tertiary)] mt-1">AI-powered financial assistant</span>

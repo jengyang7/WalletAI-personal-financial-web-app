@@ -23,6 +23,7 @@ import {
     Receipt,
     Image as ImageIcon
 } from 'lucide-react';
+import Image from 'next/image';
 import LandingHeader from '@/components/LandingHeader';
 
 export default function LandingPage() {
@@ -43,10 +44,10 @@ export default function LandingPage() {
                     {/* Headline */}
                     <div className="text-center mb-6 md:mb-8">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-                            <span className="text-[var(--text-primary)]">WalletAI</span>
+                            <span className="text-[var(--logo-wallet)]">Wallet</span><span className="text-[var(--logo-ai)]">AI</span>
                         </h1>
                         <p className="text-lg sm:text-xl md:text-2xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-6">
-                            AI-powered personal finance tracker with natural language insights
+                            AI-powered personal finance assistant with natural language insights
                         </p>
 
                         {/* CTA Buttons */}
@@ -437,11 +438,15 @@ export default function LandingPage() {
                 <div className="max-w-5xl mx-auto">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6">
                         {/* Logo */}
-                        <div className="flex items-center space-x-3">
-                            <div className="bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-success)] p-2 rounded-xl">
-                                <CreditCard className="h-5 w-5 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-[var(--text-primary)]">WalletAI</span>
+                        <div className="flex items-end">
+                            <Image
+                                src="/wallet-ai-logo.png"
+                                alt="WalletAI Logo"
+                                width={34}
+                                height={34}
+                                className="logo relative top-[4px]"
+                            />
+                            <span className="ml-1 text-xl font-bold leading-none"><span className="text-[var(--logo-wallet)]">Wallet</span><span className="text-[var(--logo-ai)]">AI</span></span>
                         </div>
 
                         {/* Links */}
