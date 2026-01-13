@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-    CreditCard,
     Sparkles,
     Brain,
     MessageSquare,

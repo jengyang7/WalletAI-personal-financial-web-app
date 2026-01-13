@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Wallet, Trash2, TrendingUp, Sparkles, Send, Loader2, Check, Edit2, PlusCircle } from 'lucide-react';
+import { Plus, Wallet, Trash2, TrendingUp, Sparkles, Send, Loader2, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
@@ -151,7 +151,7 @@ export default function AssetsPage() {
         if (mounted && !assetsError) setAssets((assetsData || []) as Asset[]);
 
         // Ensure default wallet exists and load wallets
-        const defaultWallet = await ensureDefaultWallet(user.id, settingsData?.currency || 'USD');
+        await ensureDefaultWallet(user.id, settingsData?.currency || 'USD');
         const userWallets = await getWallets(user.id);
         if (mounted) {
           setWallets(userWallets);
@@ -1214,7 +1214,7 @@ export default function AssetsPage() {
 
             {/* Wallet Cards */}
             <div className="space-y-3">
-              {wallets.map((wallet, index) => (
+              {wallets.map((wallet) => (
                 <div
                   key={wallet.id}
                   onClick={() => handleOpenEditWallet(wallet)}

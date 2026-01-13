@@ -1,7 +1,7 @@
 'use client';
 
-import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, Legend, ComposedChart, AreaChart, Area } from 'recharts';
-import { TrendingUp, TrendingDown, DollarSign, Wallet as WalletIcon, CreditCard, Calendar, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, Target as TargetIcon, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, AreaChart, Area } from 'recharts';
+import { TrendingUp, TrendingDown, DollarSign, Wallet as WalletIcon, CreditCard, Sparkles, AlertTriangle, CheckCircle, Info, Lightbulb, ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useFinance } from '@/context/FinanceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useMonth } from '@/context/MonthContext';
@@ -45,13 +45,7 @@ interface MonthlyStatRecord {
   [key: string]: unknown;
 }
 
-interface Budget {
-  id: string;
-  category: string;
-  allocated_amount: number;
-  currency?: string;
-  [key: string]: unknown;
-}
+// Budget interface moved to useFinance context
 
 interface Goal {
   id: string;
@@ -64,7 +58,7 @@ interface Goal {
 }
 
 export default function Dashboard() {
-  const { expenses, subscriptions, budgets } = useFinance();
+  const { expenses, budgets } = useFinance();
   const { user } = useAuth();
   const { selectedMonth, setSelectedMonth } = useMonth();
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);

@@ -242,7 +242,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: _data, error } = await supabase
         .from('budgets')
         .insert({
           user_id: user.id,

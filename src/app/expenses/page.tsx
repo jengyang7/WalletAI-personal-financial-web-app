@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, Calendar, RefreshCw, X, Sparkles, Zap, Send, Loader2, Check, Wallet, Camera } from 'lucide-react';
+import { Plus, ShoppingCart, Car, Home, Gamepad2, Trash2, CreditCard, X, Sparkles, Send, Loader2, Check, Camera } from 'lucide-react';
 import { CATEGORY_OPTIONS } from '@/constants/categories';
 import { useFinance, type Subscription } from '@/context/FinanceContext';
 import { useMonth } from '@/context/MonthContext';
@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getCurrencyFormatter, getCurrencySymbol } from '@/lib/currency';
 import { convertCurrency } from '@/lib/currencyConversion';
 import MonthSelector from '@/components/MonthSelector';
-import { autoCategorize, parseMultipleExpenses, parseReceiptImage, type ParsedExpenseItem } from '@/lib/autoCategorization';
+import { autoCategorize, parseMultipleExpenses, parseReceiptImage } from '@/lib/autoCategorization';
 import { Wallet as WalletType, getWallets, ensureDefaultWallet } from '@/lib/wallets';
 
 interface Expense {
@@ -182,8 +182,8 @@ export default function Expenses() {
     next_billing_date: new Date().toISOString().split('T')[0],
     description: ''
   });
-  const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
-  const [autoCategoryMethod, setAutoCategoryMethod] = useState<'keyword' | 'gemini' | null>(null);
+  const [_isAutoCategorizing, setIsAutoCategorizing] = useState(false);
+  const [_autoCategoryMethod, setAutoCategoryMethod] = useState<'keyword' | 'gemini' | null>(null);
   const autoCategorizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // AI Mode states
@@ -328,7 +328,7 @@ export default function Expenses() {
 
   const profileCurrency = userSettings?.currency || 'USD';
   const formatCurrency = getCurrencyFormatter(profileCurrency);
-  const currencySymbol = getCurrencySymbol(newExpense.currency || profileCurrency);
+  const _currencySymbol = getCurrencySymbol(newExpense.currency || profileCurrency);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<string | null>(null);
 
@@ -420,7 +420,7 @@ export default function Expenses() {
   }, {} as Record<string, Record<string, Expense[]>>);
 
   // Auto-categorization when description changes
-  const handleDescriptionChange = useCallback(async (description: string) => {
+  const _handleDescriptionChange = useCallback(async (description: string) => {
     setNewExpense(prev => ({ ...prev, description }));
 
     // Clear previous timeout

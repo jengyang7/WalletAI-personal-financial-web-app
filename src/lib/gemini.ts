@@ -1609,7 +1609,7 @@ async function semanticSearchExpenses(userId: string, params: Record<string, unk
     console.log(`[semantic_search] Searching for: "${searchConcept}"`);
 
     // 1. Try semantic search first (for expenses with embeddings)
-    let semanticResults: any[] = [];
+    let semanticResults: Array<{ id: string; description: string; amount: number; category: string; date: string; currency: string; similarity: number }> = [];
     try {
       const queryEmbedding = await getTextEmbedding(searchConcept);
 
@@ -1651,7 +1651,7 @@ async function semanticSearchExpenses(userId: string, params: Record<string, unk
     console.log(`[semantic_search] Text search keywords (filtered): ${keywords.join(', ')}`);
 
     // Only do text search if we have specific keywords to search for
-    let textResults: any[] = [];
+    let textResults: Array<{ id: string; description: string; amount: number; category: string; date: string; currency: string; similarity: number; match_type: string }> = [];
     if (keywords.length > 0) {
       let textQuery = supabase
         .from('expenses')
@@ -1856,7 +1856,7 @@ async function generateChart(userId: string, params: Record<string, unknown>, us
             return dataPoint;
           })
           .sort((a, b) => (a.sortDate as Date).getTime() - (b.sortDate as Date).getTime())
-          .map(({ sortDate, ...rest }) => rest);
+          .map(({ sortDate: _sortDate, ...rest }) => rest);
 
         // Build series for each category with distinct colors
         const categoryColors = ['#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F87171', '#22D3EE', '#F472B6', '#2DD4BF'];
@@ -2149,7 +2149,7 @@ async function generateChart(userId: string, params: Record<string, unknown>, us
             return dataPoint;
           })
           .sort((a, b) => (a.sortDate as Date).getTime() - (b.sortDate as Date).getTime())
-          .map(({ sortDate, ...rest }) => rest);
+          .map(({ sortDate: _sortDate, ...rest }) => rest);
 
         // Build series for each concept with distinct colors
         const conceptColors = ['#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F87171'];

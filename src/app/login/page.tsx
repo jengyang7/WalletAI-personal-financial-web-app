@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import { Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 
@@ -16,7 +15,6 @@ function LoginContent() {
   const [error, setError] = useState('');
 
   const { signIn } = useAuth();
-  const { theme } = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
 
