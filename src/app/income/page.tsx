@@ -795,7 +795,7 @@ export default function IncomePage() {
         {/* Income List Grouped by Month/Day */}
         <div className="lg:col-span-2">
           <div className="glass-card rounded-2xl p-4 md:p-6 animate-scale-in">
-            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Income History</h2>
+            <h2 className="text-base md:text-lg font-semibold text-[var(--text-primary)] mb-4 md:mb-6">Income</h2>
 
             {filteredIncome.length === 0 ? (
               <div className="text-center py-16">

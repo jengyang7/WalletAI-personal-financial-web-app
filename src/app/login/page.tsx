@@ -179,13 +179,10 @@ function LoginContent() {
               type="button"
               onClick={handleDemoLogin}
               disabled={loading}
-              className="w-full bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+              className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
             >
               {loading ? 'Signing In...' : 'Use Demo Account'}
             </button>
-            {/* <p className="text-center text-[var(--text-tertiary)] text-xs mt-2">
-              Click above, then Sign In to explore
-            </p> */}
           </div>
 
           <div className="mt-6 text-center">

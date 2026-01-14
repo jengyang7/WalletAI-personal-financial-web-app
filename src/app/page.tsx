@@ -53,7 +53,7 @@ export default function LandingPage() {
                         <div className="flex flex-wrap items-center justify-center gap-3 md:gap-4">
                             <Link
                                 href="/login?demo=true"
-                                className="group px-6 md:px-8 py-3 md:py-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-semibold text-base md:text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                                className="group px-6 md:px-8 py-3 md:py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-base md:text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
                             >
                                 <Play className="h-5 w-5" />
                                 <span>Try Demo</span>
@@ -413,7 +413,7 @@ export default function LandingPage() {
                     <div className="flex flex-wrap items-center justify-center gap-4">
                         <Link
                             href="/login?demo=true"
-                            className="group px-8 py-4 bg-[var(--accent-primary)] hover:bg-[var(--accent-primary-hover)] text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+                            className="group px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
                         >
                             <Play className="h-5 w-5" />
                             <span>Try Demo</span>

@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { MonthProvider } from "@/context/MonthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import AuthWrapper from "@/components/AuthWrapper";
 
-const inter = Inter({ subsets: ["latin"] });
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-plus-jakarta",
+});
 
 export const metadata: Metadata = {
   title: "WalletAI - Personal Finance Assistant",
@@ -33,7 +37,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={plusJakartaSans.className}>
         <ThemeProvider>
           <AuthProvider>
             <MonthProvider>
