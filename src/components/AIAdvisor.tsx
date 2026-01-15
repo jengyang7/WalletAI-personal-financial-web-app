@@ -470,7 +470,7 @@ export default function AIAdvisor({ onClose, onExpand, isExpanded }: AIAdvisorPr
         </div>
         <div className="text-center mt-2">
           <p className="text-[10px] text-[var(--text-tertiary)]">
-            AI can make mistakes. Verify financial data.
+            {/* AI can make mistakes. Verify financial data. */}
           </p>
         </div>
       </div>

@@ -2353,6 +2353,12 @@ Examples of what SHOULD use get_expenses (show individual transactions):
 - "Show my recent purchases" → get_expenses with limit
 - "What was my largest purchase?" → get_expenses with sort_by: "amount", limit: 1
 
+TOP EXPENSES RESPONSE FORMAT:
+When showing top/biggest expenses, keep it CONCISE:
+1. List transactions with amounts
+2. One-line summary (e.g., "Total: SGD 1,200. Largest: iPhone (SGD 1,500)")
+3. One brief insight (1-2 sentences max, e.g., "💡 Shopping dominates this month due to the iPhone purchase.")
+
 Examples of what SHOULD use generate_chart (show visualizations):
 - "Compare my food vs transport spending" → category_comparison with bar chart
 - "Show me my spending trend" → monthly_trend with line chart
@@ -2375,8 +2381,12 @@ Example function calls:
 
 IMPORTANT: When user asks about a SINGLE category trend (e.g., "food spending chart", "show my transport spending"), use the "category" parameter with monthly_trend to filter to just that category. Use "categories" (array) only for category_comparison when comparing multiple categories.
 
-When generating charts, always provide a brief text summary along with the chart.
-IMPORTANT: Do NOT include the raw JSON chart data in your response. The chart will be rendered automatically from the function result. Only provide a natural language summary explaining the data.
+CHART RESPONSE FORMAT - KEEP IT CONCISE:
+1. 2-3 bullet points with key observations (specific numbers)
+2. One brief insight or tip (1 sentence)
+3. Do NOT write long paragraphs or multiple sections
+
+IMPORTANT: Do NOT include raw JSON in your response. The chart renders automatically.
 
 SEMANTIC COMPARISON CHARTS (VERY IMPORTANT):
 When users ask to compare concepts that are NOT predefined categories (e.g., "food delivery vs dine-in", "coffee vs bubble tea", "online shopping vs in-store"), use semantic_comparison:
