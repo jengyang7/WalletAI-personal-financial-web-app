@@ -469,7 +469,7 @@ async function getUserCurrency(userId: string): Promise<string> {
 
 // Helper: Generate text embedding using Gemini API
 // This is a standalone function that can be used before GeminiClient class is defined
-async function getTextEmbedding(text: string): Promise<number[]> {
+export async function getTextEmbedding(text: string): Promise<number[]> {
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error('NEXT_PUBLIC_GEMINI_API_KEY is not set');
@@ -1838,7 +1838,8 @@ async function generateChart(userId: string, params: Record<string, unknown>, us
             return dataPoint;
           })
           .sort((a, b) => (a.sortDate as Date).getTime() - (b.sortDate as Date).getTime())
-          .map(({ sortDate: _sortDate, ...rest }) => rest);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(({ sortDate, ...rest }) => rest);
 
         // Build series for each category with distinct colors
         // IMPORTANT: Use the original categories order (if provided) to maintain user's requested order
@@ -2135,7 +2136,8 @@ async function generateChart(userId: string, params: Record<string, unknown>, us
             return dataPoint;
           })
           .sort((a, b) => (a.sortDate as Date).getTime() - (b.sortDate as Date).getTime())
-          .map(({ sortDate: _sortDate, ...rest }) => rest);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(({ sortDate, ...rest }) => rest);
 
         // Build series for each concept with distinct colors
         const conceptColors = ['#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F87171'];

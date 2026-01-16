@@ -151,25 +151,7 @@ export default function Expenses() {
     wallet_id: string;
   }>>([]);
 
-  // Helper to add a new manual expense row
-  const addManualExpenseRow = () => {
-    setManualExpenses(prev => [...prev, createEmptyManualExpense()]);
-  };
 
-  // Helper to remove a manual expense row
-  const removeManualExpenseRow = (id: string) => {
-    setManualExpenses(prev => {
-      if (prev.length <= 1) return prev; // Keep at least one row
-      return prev.filter(exp => exp.id !== id);
-    });
-  };
-
-  // Helper to update a manual expense field
-  const updateManualExpense = (id: string, field: string, value: string) => {
-    setManualExpenses(prev => prev.map(exp =>
-      exp.id === id ? { ...exp, [field]: value } : exp
-    ));
-  };
 
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
@@ -224,7 +206,8 @@ export default function Expenses() {
         wallet_id: defaultWallet?.id || ''
       }]);
     }
-  }, [isAIMode, wallets, userSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAIMode, wallets]);
 
   // Load user currency setting
   useEffect(() => {
@@ -260,6 +243,7 @@ export default function Expenses() {
     if (selectedMonth && selectedMonth !== 'all') {
       setNewExpense(prev => ({ ...prev, date: getDateForSelectedMonth() }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
   // Auto-apply subscriptions that are due
@@ -328,7 +312,7 @@ export default function Expenses() {
 
   const profileCurrency = userSettings?.currency || 'USD';
   const formatCurrency = getCurrencyFormatter(profileCurrency);
-  const _currencySymbol = getCurrencySymbol(newExpense.currency || profileCurrency);
+
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<string | null>(null);
 
@@ -366,42 +350,8 @@ export default function Expenses() {
         );
         return sum + amountInProfileCurrency;
       }, 0);
-  }, [expenses, userSettings, selectedMonth]);
-
-  // Calculate expenses by category for current month
-  const _expensesByCategory = useMemo(() => {
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const categoryTotals: Record<string, number> = {};
-
-    expenses
-      .filter(exp => {
-        const expDate = new Date(exp.date);
-        const expMonth = `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}`;
-        return expMonth === currentMonth;
-      })
-      .forEach(exp => {
-        const amountInProfileCurrency = convertCurrency(
-          exp.amount,
-          exp.currency || 'USD',
-          profileCurrency
-        );
-        categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + amountInProfileCurrency;
-      });
-
-    const total = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6'];
-
-    return {
-      total,
-      categories: Object.entries(categoryTotals).map(([name, value], index) => ({
-        name,
-        value,
-        color: colors[index % colors.length],
-        percentage: total > 0 ? Math.round((value / total) * 100) : 0
-      }))
-    };
-  }, [expenses, userSettings, profileCurrency]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenses, selectedMonth]);
 
   // Group expenses by month and day
   const groupedExpenses = filteredExpenses.reduce((acc, expense) => {
@@ -419,64 +369,7 @@ export default function Expenses() {
     return acc;
   }, {} as Record<string, Record<string, Expense[]>>);
 
-  // Auto-categorization when description changes
-  const _handleDescriptionChange = useCallback(async (description: string) => {
-    setNewExpense(prev => ({ ...prev, description }));
 
-    // Clear previous timeout
-    if (autoCategorizeTimeoutRef.current) {
-      clearTimeout(autoCategorizeTimeoutRef.current);
-    }
-
-    // Don't auto-categorize if description is too short
-    if (description.trim().length < 3) {
-      setAutoCategoryMethod(null);
-      return;
-    }
-
-    // Debounce auto-categorization (wait 500ms after user stops typing)
-    setIsAutoCategorizing(true);
-    autoCategorizeTimeoutRef.current = setTimeout(async () => {
-      try {
-        const userCurrency = userSettings?.currency || 'USD';
-        const result = await autoCategorize(description, userCurrency, true);
-
-        // Build the update object
-        const updates: Partial<typeof newExpense> = {
-          category: result.category
-        };
-
-        // Auto-fill amount if extracted (only if field is empty or auto-filled before)
-        if (result.extractedAmount != null) {
-          updates.amount = result.extractedAmount.toString();
-        }
-
-        // Auto-fill currency if extracted
-        if (result.extractedCurrency) {
-          updates.currency = result.extractedCurrency;
-        }
-
-        // Auto-fill date if extracted
-        if (result.extractedDate) {
-          updates.date = result.extractedDate;
-        }
-
-        // Use cleaned description if available
-        if (result.cleanedDescription && result.cleanedDescription.trim()) {
-          updates.description = result.cleanedDescription;
-        }
-
-        // Apply all updates at once
-        setNewExpense(prev => ({ ...prev, ...updates }));
-        setAutoCategoryMethod(result.method === 'default' ? null : result.method);
-
-      } catch (error) {
-        console.error('Auto-categorization error:', error);
-      } finally {
-        setIsAutoCategorizing(false);
-      }
-    }, 500);
-  }, [userSettings?.currency]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

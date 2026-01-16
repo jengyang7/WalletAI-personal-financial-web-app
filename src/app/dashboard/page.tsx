@@ -247,53 +247,7 @@ export default function Dashboard() {
       return sum + amountInProfileCurrency;
     }, 0);
 
-    const totalAssets = assets.reduce((sum, asset) => {
-      const amountInProfileCurrency = convertCurrency(
-        asset.amount,
-        (asset as AssetRecord).currency || 'USD',
-        profileCurrency
-      );
-      return sum + amountInProfileCurrency;
-    }, 0);
 
-    // Include portfolio value in net worth
-    const totalPortfolioValue = holdings.reduce((sum, holding) => {
-      const currentPrice = holding.current_price || holding.average_price || 0;
-      const valueInHoldingCurrency = holding.shares * currentPrice;
-      const valueInProfileCurrency = convertCurrency(
-        valueInHoldingCurrency,
-        holding.currency || 'USD',
-        profileCurrency
-      );
-      return sum + valueInProfileCurrency;
-    }, 0);
-
-    // Determine if selected month is current month
-    const now = new Date();
-    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const isCurrentMonth = selectedMonth === currentMonthKey;
-
-    // Check if user has any transactions for the selected month
-    const hasTransactionsForMonth = monthExpenses.length > 0 || monthIncome.length > 0;
-
-    // Helper to get month balance
-    const getMonthBalance = (monthKey: string) => {
-      const mIncome = income
-        .filter(inc => {
-          const incDate = new Date(inc.date);
-          return `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
-        })
-        .reduce((sum, inc) => sum + convertCurrency(inc.amount, (inc as IncomeRecord).currency || 'USD', profileCurrency), 0);
-
-      const mExpenses = expenses
-        .filter(exp => {
-          const expDate = new Date(exp.date);
-          return `${expDate.getFullYear()}-${String(expDate.getMonth() + 1).padStart(2, '0')}` === monthKey;
-        })
-        .reduce((sum, exp) => sum + convertCurrency(exp.amount, (exp as { currency?: string }).currency || 'USD', profileCurrency), 0);
-
-      return mIncome - mExpenses;
-    };
 
     // Balance = monthly income - expenses for the selected month
     const monthlyBalance = totalIncome - totalExpenses;
@@ -320,7 +274,8 @@ export default function Dashboard() {
       expenses: { amount: totalExpenses, change: expenseChange },
       balance: { amount: monthlyBalance, change: balanceChange }
     };
-  }, [monthExpenses, monthIncome, assets, holdings, previousMonthData, monthlyStats, selectedMonth, userSettings, expenses, income]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthExpenses, monthIncome, previousMonthData, selectedMonth, userSettings]);
 
   const formatCurrency = useMemo(() => getCurrencyFormatter(userSettings?.currency || 'USD'), [userSettings?.currency]);
 
@@ -366,48 +321,9 @@ export default function Dashboard() {
   }, [monthExpenses, expenses, selectedMonth, spendingPeriod, userSettings]);
 
   // Get recent expenses for selected month (last 5)
-  const _recentExpensesList = useMemo(() => {
-    return monthExpenses.slice(0, 5).map(exp => ({
-      date: new Date(exp.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
-      description: exp.description,
-      category: exp.category,
-      amount: -exp.amount,
-      currency: (exp as { currency?: string }).currency || 'USD' // Include currency from expense
-    }));
-  }, [monthExpenses]);
 
-  // Calculate monthly spending for last 12 months
-  const monthlySpendingData = useMemo(() => {
-    const profileCurrency = userSettings?.currency || 'USD';
-    const data = [];
-    const now = new Date();
 
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthLabel = date.toLocaleDateString('en-US', { month: 'short' });
 
-      const monthTotal = expenses
-        .filter(exp => {
-          const expDate = new Date(exp.date);
-          return expDate.getFullYear() === date.getFullYear() && expDate.getMonth() === date.getMonth();
-        })
-        .reduce((sum, exp) => {
-          const amountInProfileCurrency = convertCurrency(
-            exp.amount,
-            (exp as { currency?: string }).currency || 'USD',
-            profileCurrency
-          );
-          return sum + amountInProfileCurrency;
-        }, 0);
-
-      data.push({
-        month: monthLabel,
-        value: monthTotal
-      });
-    }
-
-    return data;
-  }, [expenses, userSettings]);
 
   // Calculate cashflow data (Income vs Expenses) for last 12 months
   const cashflowData = useMemo(() => {
@@ -465,29 +381,7 @@ export default function Dashboard() {
     return data;
   }, [expenses, income, userSettings, selectedMonth]);
 
-  // Calculate savings rate for current month
-  const savingsRate = useMemo(() => {
-    const totalExpenses = monthExpenses.reduce((sum, exp) => {
-      const amountInProfileCurrency = convertCurrency(
-        exp.amount,
-        (exp as { currency?: string }).currency || 'USD',
-        userSettings?.currency || 'USD'
-      );
-      return sum + amountInProfileCurrency;
-    }, 0);
 
-    const totalIncome = monthIncome.reduce((sum, inc) => {
-      const amountInProfileCurrency = convertCurrency(
-        inc.amount,
-        (inc as IncomeRecord).currency || 'USD',
-        userSettings?.currency || 'USD'
-      );
-      return sum + amountInProfileCurrency;
-    }, 0);
-
-    if (totalIncome === 0) return 0;
-    return Math.round(((totalIncome - totalExpenses) / totalIncome) * 100);
-  }, [monthExpenses, monthIncome, userSettings]);
 
   // AI Insights
   const aiInsights = useMemo(() => {
@@ -515,7 +409,7 @@ export default function Dashboard() {
       const percentage = budget.allocated_amount > 0 ? (categorySpending / budget.allocated_amount) * 100 : 0;
 
       if (percentage > 100) {
-        const overspent = categorySpending - budget.allocated_amount;
+
         insights.push({
           id: `budget-exceeded-${budget.id}`,
           type: 'error',

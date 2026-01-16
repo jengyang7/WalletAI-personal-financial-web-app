@@ -32,7 +32,7 @@ interface Transaction {
 
 // Cache keys
 const HISTORICAL_PRICES_CACHE_KEY = 'walletai_historical_prices';
-const CURRENT_PRICES_CACHE_KEY = 'walletai_current_prices';
+
 const CACHE_EXPIRY_HOURS = 24; // Historical prices cache for 24 hours
 const CURRENT_PRICE_STALE_MINUTES = 15; // Current prices stale after 15 minutes
 
@@ -66,7 +66,7 @@ export default function Investments() {
   const [deletingHolding, setDeletingHolding] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState<string | null>(null);
   const [displayCurrency, setDisplayCurrency] = useState('USD');
-  const _userSettings = useState<{ currency?: string;[key: string]: unknown } | null>(null)[0];
+
 
   // Delete confirmation modal state
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -627,7 +627,8 @@ export default function Investments() {
       color: colors[index % colors.length]
     }));
     return entries.sort((a, b) => b.value - a.value);
-  }, [holdings, displayCurrency]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdings, displayCurrency, portfolioStats.totalValue]);
 
   // Portfolio performance over last 12 months
   // Strategy: Calculate portfolio value at each month-end based on:
@@ -720,7 +721,8 @@ export default function Investments() {
     }
 
     return data;
-  }, [portfolioStats.totalValue, monthlyStats, holdings, transactions, displayCurrency, historicalPrices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthlyStats, holdings, transactions, displayCurrency, historicalPrices]);
 
   if (loading) {
     return (

@@ -29,10 +29,10 @@ export default function LandingPage() {
                                 <span className="text-[var(--logo-wallet)]">Wallet</span><span className="text-[var(--logo-ai)]">AI</span>
                             </h1>
                             <p className="text-base sm:text-lg text-[var(--text-secondary)] mb-3">
-                                A personal finance app that actually understands you.
+                                A personal finance app you can talk to.
                             </p>
                             <p className="text-sm text-[var(--text-tertiary)] mb-6">
-                                Track expenses with natural language. Get AI-powered insights. No spreadsheets required.
+                                Track your money using natural language and get instant financial insights — no spreadsheets required.
                             </p>
 
                             {/* CTA Buttons */}
@@ -78,10 +78,10 @@ export default function LandingPage() {
                     {/* Section Header */}
                     <div className="mb-12">
                         <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
-                            What it does
+                            App features
                         </h2>
                         <p className="text-[var(--text-secondary)]">
-                            Built for people who want to understand their money without the hassle.
+                            Built with AI to help you track spending, uncover insights, and truly understand your money effortlessly.
                         </p>
                     </div>
 
@@ -102,12 +102,12 @@ export default function LandingPage() {
                                 </div>
                                 <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">AI Assistant</h3>
                                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-4">
-                                    Ask questions in plain English. "How much did I spend on food last month?" or "Show me my biggest expenses this year." The AI queries your data and responds with insights, not just numbers.
+                                    Ask questions in human language. &quot;How much did I spend on coffee last month?&quot; or &quot;Compare my grocery and dining expenses for past 6 months.&quot; The AI queries your data and responds with insights within seconds.
                                 </p>
                                 <ul className="text-sm text-[var(--text-tertiary)] space-y-1">
-                                    <li>• Creates expenses from natural language input</li>
-                                    <li>• Generates charts on request</li>
-                                    <li>• 8 integrated financial functions</li>
+                                    <li>• Discover your spending habits and gain actionable insights</li>
+                                    <li>• Instantly generate charts from your text requirement</li>
+                                    <li>• Supports multiple languages </li>
                                 </ul>
                             </div>
                         </div>
@@ -126,8 +126,7 @@ export default function LandingPage() {
                             </div>
                             <div className="p-5">
                                 <h3 className="font-semibold text-[var(--text-primary)] mb-1">Dashboard</h3>
-                                <p className="text-[var(--text-secondary)] text-sm">
-                                    Net worth, cash flow, spending by category. Everything in one view.
+                                <p className="text-[var(--text-secondary)] text-sm">AI insights reveal abnormalities in your finances, with beautiful charts showing cash flow, net worth, and spending habits — all in one view.
                                 </p>
                             </div>
                         </div>
@@ -144,7 +143,7 @@ export default function LandingPage() {
                             <div className="p-5">
                                 <h3 className="font-semibold text-[var(--text-primary)] mb-1">Smart Input</h3>
                                 <p className="text-[var(--text-secondary)] text-sm">
-                                    Type "coffee $5" or scan a receipt. AI handles the rest.
+                                    Enter multiple expenses in natural language — like “coffee $5, lunch $12” — and AI will auto-categorize them. You can also scan receipts to add expenses instantly.
                                 </p>
                             </div>
                         </div>
@@ -164,72 +163,179 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* Tech Stack Section - Compact Horizontal */}
-            <section id="tech" className="py-12 px-4 md:px-6 border-t border-[var(--card-border)]">
+            {/* Technical Writeup Section - Comprehensive for Recruiters */}
+            <section id="tech" className="py-16 md:py-20 px-4 md:px-6 border-t border-[var(--card-border)]">
                 <div className="max-w-5xl mx-auto">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <p className="text-sm font-medium text-[var(--text-primary)]">Built with:</p>
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-[var(--text-secondary)]">
-                            <span className="flex items-center gap-1.5">
-                                <span className="w-5 h-5 rounded bg-black flex items-center justify-center text-white text-xs font-bold">N</span>
-                                Next.js 15
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <span className="text-[#61DAFB]">⚛</span>
-                                React 19
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Code2 className="h-4 w-4 text-[#3178C6]" />
-                                TypeScript
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Database className="h-4 w-4 text-[#3ECF8E]" />
-                                Supabase
-                            </span>
-                            <span className="flex items-center gap-1.5">
-                                <Cpu className="h-4 w-4 text-[var(--accent-primary)]" />
-                                Gemini AI
-                            </span>
+                    {/* Section Header */}
+                    <div className="mb-10">
+                        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
+                            Technical Writeup
+                        </h2>
+                        <p className="text-[var(--text-secondary)]">
+                            A breakdown of the architecture, technologies, and engineering decisions behind WalletAI.
+                        </p>
+                    </div>
+
+                    {/* Tech Stack Grid */}
+                    <div className="mb-12">
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            <Code2 className="h-5 w-5 text-[var(--accent-primary)]" />
+                            Tech Stack
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="w-6 h-6 rounded bg-black flex items-center justify-center text-white text-xs font-bold">N</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Next.js 15</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">App Router, Server Actions</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[#61DAFB] text-lg">⚛</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">React 19</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">Hooks, Context API</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[#3178C6] font-bold text-sm">TS</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">TypeScript</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">Strict type safety</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Database className="h-5 w-5 text-[#3ECF8E]" />
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Supabase</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">PostgreSQL, Auth, RLS</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Cpu className="h-5 w-5 text-[#4285F4]" />
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Gemini 2.5 Flash</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">Function calling, Vision</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[#38BDF8] font-bold text-sm">◆</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Tailwind CSS 4</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">CSS variables, Dark mode</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[#FF6384] font-bold text-sm">📊</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Recharts</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">Dynamic data viz</p>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-emerald-500">▲</span>
+                                    <span className="font-medium text-[var(--text-primary)] text-sm">Vercel</span>
+                                </div>
+                                <p className="text-xs text-[var(--text-tertiary)]">Edge deployment</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            {/* Technical Highlights Section - Condensed */}
-            <section id="highlights" className="py-12 md:py-16 px-4 md:px-6 border-t border-[var(--card-border)]">
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">
-                        Under the hood
-                    </h2>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Brain className="h-4 w-4 text-[var(--accent-primary)]" />
-                                <h3 className="font-semibold text-[var(--text-primary)] text-sm">AI Function Calling</h3>
+                    {/* AI Function Calling */}
+                    <div className="mb-12">
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            <Brain className="h-5 w-5 text-[var(--accent-primary)]" />
+                            AI Function Calling (14 Functions)
+                        </h3>
+                        <p className="text-sm text-[var(--text-secondary)] mb-4">
+                            The AI assistant uses Gemini&apos;s function calling to execute structured database queries from natural language. Each function has typed parameters and returns formatted data.
+                        </p>
+                        <div className="grid md:grid-cols-2 gap-3">
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <p className="font-medium text-[var(--text-primary)] text-sm mb-2">Data Retrieval</p>
+                                <div className="space-y-1 text-xs text-[var(--text-secondary)]">
+                                    <p><code className="text-[var(--accent-primary)]">get_expenses</code> — Query with date/category filters</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_income</code> — Income by source and period</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_budget</code> — Budget status and limits</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_subscriptions</code> — Recurring payments</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_portfolio</code> — Investment summary</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_holdings</code> — Stock/crypto positions</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_assets</code> — Net worth calculation</p>
+                                </div>
                             </div>
-                            <p className="text-[var(--text-secondary)] text-sm">
-                                8 Gemini-powered functions handle database queries via natural language. Ask a question, get data back.
-                            </p>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <p className="font-medium text-[var(--text-primary)] text-sm mb-2">Actions & Analysis</p>
+                                <div className="space-y-1 text-xs text-[var(--text-secondary)]">
+                                    <p><code className="text-[var(--accent-primary)]">create_expense</code> — Add from natural language</p>
+                                    <p><code className="text-[var(--accent-primary)]">create_budget</code> — Set spending limits</p>
+                                    <p><code className="text-[var(--accent-primary)]">delete_expenses</code> — Remove transactions</p>
+                                    <p><code className="text-[var(--accent-primary)]">get_spending_summary</code> — Period analysis</p>
+                                    <p><code className="text-[var(--accent-primary)]">search_transactions</code> — Full-text search</p>
+                                    <p><code className="text-[var(--accent-primary)]">semantic_search</code> — AI-powered fuzzy search</p>
+                                    <p><code className="text-[var(--accent-primary)]">generate_chart</code> — Dynamic visualizations</p>
+                                </div>
+                            </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Zap className="h-4 w-4 text-[var(--accent-warning)]" />
-                                <h3 className="font-semibold text-[var(--text-primary)] text-sm">Hybrid Parser</h3>
+                    {/* System Architecture */}
+                    <div className="mb-12">
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-[var(--accent-warning)]" />
+                            System Architecture
+                        </h3>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <p className="font-medium text-[var(--text-primary)] text-sm mb-2">Security</p>
+                                <ul className="text-xs text-[var(--text-secondary)] space-y-1">
+                                    <li>• Row-Level Security (RLS) — Data isolation at DB level</li>
+                                    <li>• JWT Auth — Supabase session management</li>
+                                    <li>• Service role keys — Server-only operations</li>
+                                </ul>
                             </div>
-                            <p className="text-[var(--text-secondary)] text-sm">
-                                Keyword parsing handles simple inputs in &lt;2ms. Complex natural language falls back to AI.
-                            </p>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <p className="font-medium text-[var(--text-primary)] text-sm mb-2">Performance</p>
+                                <ul className="text-xs text-[var(--text-secondary)] space-y-1">
+                                    <li>• Edge caching — Stock prices cached 15min</li>
+                                    <li>• Optimistic UI — Instant feedback</li>
+                                    <li>• Lazy loading — Charts render on demand</li>
+                                </ul>
+                            </div>
+                            <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                                <p className="font-medium text-[var(--text-primary)] text-sm mb-2">AI Features</p>
+                                <ul className="text-xs text-[var(--text-secondary)] space-y-1">
+                                    <li>• Chart generation — Retrieve and visualize data</li>
+                                    <li>• Receipt OCR — Extracts data from receipt</li>
+                                    <li>• Auto-categorization — Expenses type classification</li>
+
+                                </ul>
+                            </div>
                         </div>
+                    </div>
 
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Database className="h-4 w-4 text-[var(--accent-success)]" />
-                                <h3 className="font-semibold text-[var(--text-primary)] text-sm">Row-Level Security</h3>
+                    {/* Database Schema */}
+                    <div>
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+                            <Database className="h-5 w-5 text-[var(--accent-success)]" />
+                            Database Design
+                        </h3>
+                        <div className="p-4 rounded-xl border border-[var(--card-border)] bg-[var(--background-elevated)]">
+                            <div className="flex flex-wrap gap-2 text-xs">
+                                <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">users</span>
+                                <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">expenses</span>
+                                <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 border border-green-500/20">income</span>
+                                <span className="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">budgets</span>
+                                <span className="px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">subscriptions</span>
+                                <span className="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">wallets</span>
+                                <span className="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">assets</span>
+                                <span className="px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20">holdings</span>
+                                <span className="px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20">transactions</span>
+                                <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">goals</span>
+                                <span className="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">monthly_stats</span>
                             </div>
-                            <p className="text-[var(--text-secondary)] text-sm">
-                                PostgreSQL RLS policies ensure data isolation per user. No API-level auth bugs possible.
+                            <p className="text-xs text-[var(--text-tertiary)] mt-3">
+                                All tables enforce RLS policies. Foreign keys link to user_id from Supabase Auth.
                             </p>
                         </div>
                     </div>
@@ -288,7 +394,7 @@ export default function LandingPage() {
                                 Features
                             </a>
                             <a href="#tech" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-sm">
-                                Tech Stack
+                                Tech Writeup
                             </a>
                             <a
                                 href="https://github.com/jengyang7/WalletAI-personal-financial-web-app"

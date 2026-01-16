@@ -66,10 +66,7 @@ export default function LandingHeader() {
                             Features
                         </a>
                         <a href="#tech" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium">
-                            Tech Stack
-                        </a>
-                        <a href="#highlights" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium">
-                            Technical Highlights
+                            Tech Writeup
                         </a>
                     </div>
 
@@ -134,14 +131,7 @@ export default function LandingHeader() {
                                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium py-2"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                Tech Stack
-                            </a>
-                            <a
-                                href="#highlights"
-                                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium py-2"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                Technical Highlights
+                                Tech Writeup
                             </a>
                             <hr className="border-[var(--glass-border)]" />
 

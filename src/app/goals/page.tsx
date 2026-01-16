@@ -233,7 +233,7 @@ export default function Goals() {
   };
 
   const profileCurrency = userSettings?.currency || 'USD';
-  const _formatCurrency = getCurrencyFormatter(profileCurrency);
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

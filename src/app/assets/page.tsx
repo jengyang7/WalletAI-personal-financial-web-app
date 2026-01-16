@@ -571,31 +571,7 @@ export default function AssetsPage() {
     }, 0);
   }, [assets, profileCurrency]);
 
-  const _assetsByType = useMemo(() => {
-    const typeTotals: Record<string, number> = {};
 
-    assets.forEach(asset => {
-      const valueInProfileCurrency = convertCurrency(
-        asset.amount,
-        asset.currency || 'USD',
-        profileCurrency
-      );
-      typeTotals[asset.type] = (typeTotals[asset.type] || 0) + valueInProfileCurrency;
-    });
-
-    const total = Object.values(typeTotals).reduce((sum, val) => sum + val, 0);
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6'];
-
-    return {
-      total,
-      types: Object.entries(typeTotals).map(([name, value], index) => ({
-        name,
-        value,
-        color: colors[index % colors.length],
-        percentage: total > 0 ? Math.round((value / total) * 100) : 0
-      }))
-    };
-  }, [assets, profileCurrency]);
 
   const assetTypeColors: Record<string, string> = {
     'Cash': 'from-green-500 to-green-600',

@@ -123,6 +123,7 @@ export default function IncomePage() {
     if (selectedMonth && selectedMonth !== 'all') {
       setNewIncome(prev => ({ ...prev, date: getDateForSelectedMonth() }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMonth]);
 
   const loadSettings = async () => {
@@ -424,41 +425,7 @@ export default function IncomePage() {
       }, 0);
   }, [income, userSettings, selectedMonth]);
 
-  // Calculate income by source for current month
-  const _incomeBySource = useMemo(() => {
-    const profileCurrency = userSettings?.currency || 'USD';
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const sourceTotals: Record<string, number> = {};
 
-    income
-      .filter(inc => {
-        const incDate = new Date(inc.date);
-        const incMonth = `${incDate.getFullYear()}-${String(incDate.getMonth() + 1).padStart(2, '0')}`;
-        return incMonth === currentMonth;
-      })
-      .forEach(inc => {
-        const amountInProfileCurrency = convertCurrency(
-          inc.amount,
-          inc.currency || 'USD',
-          profileCurrency
-        );
-        sourceTotals[inc.source] = (sourceTotals[inc.source] || 0) + amountInProfileCurrency;
-      });
-
-    const total = Object.values(sourceTotals).reduce((sum, val) => sum + val, 0);
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#06B6D4', '#EC4899', '#14B8A6'];
-
-    return {
-      total,
-      sources: Object.entries(sourceTotals).map(([name, value], index) => ({
-        name,
-        value,
-        color: colors[index % colors.length],
-        percentage: total > 0 ? Math.round((value / total) * 100) : 0
-      }))
-    };
-  }, [income, userSettings]);
 
   if (loading) {
     return (
